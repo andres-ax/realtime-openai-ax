@@ -1,0 +1,17 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "cd realtime-openai-ax && npm ci && npm run build",
+    "watchPatterns": [
+      "realtime-openai-ax/**"
+    ]
+  },
+  "deploy": {
+    "startCommand": "cd realtime-openai-ax && npm start",
+    "healthcheckPath": "/",
+    "healthcheckTimeout": 100,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
+  }
+}

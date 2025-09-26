@@ -92,9 +92,17 @@
 - **SOLID compliance:** Pendiente
 - **Test coverage:** Pendiente
 
-## 🚀 PRÓXIMOS PASOS
-1. Generar árbol completo del proyecto
-2. Configurar documentación Mermaid
-3. Implementar capa Domain con DDD
-4. Configurar CQRS básico
-5. Implementar Event-Driven Architecture
+## 🚀 CONFIGURACIÓN DE DEPLOYMENT
+- [x] Configurar Railway para subdirectorio específico
+- [x] Crear railway.json con build commands
+- [x] Configurar nixpacks.toml para Node.js 20
+- [x] Crear Dockerfile optimizado para Railway
+- [x] Actualizar next.config.ts con output standalone
+- [x] Documentar proceso completo de deployment
+
+## 🎯 PRÓXIMOS PASOS RECOMENDADOS
+1. Implementar casos de uso específicos para el dominio
+2. Crear entidades concretas del negocio
+3. Configurar adaptadores para APIs reales (OpenAI)
+4. Implementar autenticación y autorización
+5. Agregar patrones de rendimiento y caching
