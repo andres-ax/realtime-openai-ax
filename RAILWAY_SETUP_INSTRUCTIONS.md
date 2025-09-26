@@ -2,18 +2,17 @@
 
 ## ⚠️ CONFIGURACIÓN MANUAL REQUERIDA EN RAILWAY DASHBOARD
 
-### 1. 🎯 **Build Settings** (CONFIGURACIÓN ACTUALIZADA)
-```
-Builder: Dockerfile (automático)
-Dockerfile Path: realtime-openai-ax/Dockerfile
-Build Command: (dejar vacío)
-Watch Paths: realtime-openai-ax/**
-```
-
-### 2. 🔧 **Root Directory** (OPCIONAL)
+### 1. 🎯 **Root Directory** (OBLIGATORIO PARA MONOREPOS)
 ```
 En Railway Dashboard → Settings → Build:
-- Root Directory: (dejar vacío - no necesario con esta configuración)
+- Root Directory: realtime-openai-ax
+```
+
+### 2. 🔧 **Build Settings** (AUTOMÁTICO)
+```
+Builder: Dockerfile (detectado automáticamente)
+Build Command: (dejar vacío)
+Start Command: (dejar vacío)
 ```
 
 ### 3. 🚀 **Deploy Settings**
@@ -31,15 +30,16 @@ PORT=3000
 
 ## 📋 PASOS DETALLADOS
 
-### Paso 1: Verificar Builder
-1. En **Build Settings**, asegúrate que esté seleccionado **"Dockerfile"**
-2. Dockerfile Path debería mostrar: `realtime-openai-ax/Dockerfile`
-3. **NO** agregues comandos de build personalizados
-4. **NO** agregues start commands personalizados
+### Paso 1: Configurar Root Directory (CRÍTICO)
+1. Ve a Railway Dashboard → Settings → Build
+2. En **Root Directory**, ingresa: `realtime-openai-ax`
+3. Click **Save/Update**
+4. Esto hace que Railway ejecute todo desde el subdirectorio
 
-### Paso 2: Configurar Watch Paths (Opcional)
-1. En **Watch Paths**, agrega: `realtime-openai-ax/**`
-2. Esto asegura que solo cambios en el subdirectorio activen builds
+### Paso 2: Verificar Configuración Automática
+1. **Builder** debería detectarse como "Dockerfile" automáticamente
+2. **NO** agregues Dockerfile Path (Railway lo encuentra automáticamente)
+3. **NO** agregues comandos de build o start personalizados
 
 ### Paso 3: Deploy
 1. Haz push de los cambios a tu repositorio
