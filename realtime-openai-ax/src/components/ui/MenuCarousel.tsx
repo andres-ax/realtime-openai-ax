@@ -8,7 +8,7 @@
 
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import styles from './MenuCarousel.module.css';
 
@@ -49,42 +49,19 @@ export default function MenuCarousel({
 
   const [radius, setRadius] = useState(300); // Valor inicial fijo para SSR
 
-  // Efecto para manejar la hidratación
-  useEffect(() => {
-    setIsClient(true);
-    setRadius(calculateRadius());
+  // Función de rotación
+  const rotate = useCallback((direction: number) => {
+    const newIndex = (currentIndex - direction + totalItems) % totalItems;
+    setCurrentIndex(newIndex);
     
-    // Notificar el item inicial como activo
-    if (onItemFocus && menuItems[currentIndex]) {
-      onItemFocus(menuItems[currentIndex].name);
+    // Notificar cambio de foco
+    if (onItemFocus && menuItems[newIndex]) {
+      onItemFocus(menuItems[newIndex].name);
     }
-  }, []);
-
-  // 🎯 Escuchar eventos de focus desde tool calling
-  useEffect(() => {
-    if (!isClient) return;
-
-    const handleFocusMenuItem = (event: CustomEvent) => {
-      const { itemName } = event.detail;
-      const targetIndex = menuItems.findIndex(item => item.name === itemName);
-      
-      if (targetIndex !== -1 && targetIndex !== currentIndex) {
-        console.log(`[MENU-CAROUSEL] 🎯 Focusing on: ${itemName} (index: ${targetIndex})`);
-        
-        // Implementar rotación step-by-step como en carousel.js original
-        rotateToIndex(targetIndex);
-      }
-    };
-
-    window.addEventListener('focusMenuItem', handleFocusMenuItem as EventListener);
-    
-    return () => {
-      window.removeEventListener('focusMenuItem', handleFocusMenuItem as EventListener);
-    };
-  }, [isClient, menuItems, currentIndex, onItemFocus]);
+  }, [currentIndex, menuItems, onItemFocus, totalItems]);
 
   // 🔄 Función de rotación step-by-step (replicando lógica de carousel.js)
-  const rotateToIndex = (targetIndex: number) => {
+  const rotateToIndex = useCallback((targetIndex: number) => {
     if (targetIndex === currentIndex || isRotating) return;
 
     // Calcular diferencia mínima de rotación (lógica del carousel.js original)
@@ -133,7 +110,41 @@ export default function MenuCarousel({
     };
 
     rotateStep();
-  };
+  }, [currentIndex, isRotating, menuItems, onItemFocus, totalItems, rotate]);
+
+  // Efecto para manejar la hidratación
+  useEffect(() => {
+    setIsClient(true);
+    setRadius(calculateRadius());
+    
+    // Notificar el item inicial como activo
+    if (onItemFocus && menuItems[currentIndex]) {
+      onItemFocus(menuItems[currentIndex].name);
+    }
+  }, [currentIndex, menuItems, onItemFocus]);
+
+  // 🎯 Escuchar eventos de focus desde tool calling
+  useEffect(() => {
+    if (!isClient) return;
+
+    const handleFocusMenuItem = (event: CustomEvent) => {
+      const { itemName } = event.detail;
+      const targetIndex = menuItems.findIndex(item => item.name === itemName);
+      
+      if (targetIndex !== -1 && targetIndex !== currentIndex) {
+        console.log(`[MENU-CAROUSEL] 🎯 Focusing on: ${itemName} (index: ${targetIndex})`);
+        
+        // Implementar rotación step-by-step como en carousel.js original
+        rotateToIndex(targetIndex);
+      }
+    };
+
+    window.addEventListener('focusMenuItem', handleFocusMenuItem as EventListener);
+    
+    return () => {
+      window.removeEventListener('focusMenuItem', handleFocusMenuItem as EventListener);
+    };
+  }, [isClient, menuItems, currentIndex, onItemFocus, rotateToIndex]);
 
   // Actualizar radio en resize
   useEffect(() => {
@@ -147,17 +158,6 @@ export default function MenuCarousel({
     return () => window.removeEventListener('resize', handleResize);
   }, [isClient]);
 
-  // Función de rotación
-  const rotate = (direction: number) => {
-    const newIndex = (currentIndex - direction + totalItems) % totalItems;
-    setCurrentIndex(newIndex);
-    
-    // Notificar cambio de foco
-    if (onItemFocus && menuItems[newIndex]) {
-      onItemFocus(menuItems[newIndex].name);
-    }
-  };
-
   // Control por teclado
   useEffect(() => {
     if (!isClient) return;
@@ -169,7 +169,7 @@ export default function MenuCarousel({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [currentIndex, isClient]);
+  }, [isClient, rotate]);
 
   // Control touch/swipe
   const [startX, setStartX] = useState<number | null>(null);
@@ -199,7 +199,7 @@ export default function MenuCarousel({
       };
     }
 
-    let rawAngle = ((index - currentIndex) * angle + 360) % 360;
+    const rawAngle = ((index - currentIndex) * angle + 360) % 360;
     const isFront = rawAngle < 1e-6 || rawAngle > 360 - 1e-6;
     const itemAngle = isFront ? 0 : rawAngle;
     const rad = itemAngle * Math.PI / 180;
@@ -218,14 +218,14 @@ export default function MenuCarousel({
     if (activeIndex !== currentIndex) {
       setCurrentIndex(activeIndex);
     }
-  }, [activeIndex]);
+  }, [activeIndex, currentIndex]);
 
   // 🎯 Exponer función de rotación para testing manual
   useEffect(() => {
     if (!isClient) return;
 
     // Exponer función global para testing desde consola
-    (window as any).rotateCarouselTo = (itemName: string) => {
+    (window as unknown as Record<string, (itemName: string) => void>).rotateCarouselTo = (itemName: string) => {
       const targetIndex = menuItems.findIndex(item => item.name === itemName);
       if (targetIndex !== -1) {
         console.log(`[MANUAL-ROTATION] Rotating to: ${itemName}`);
@@ -237,7 +237,7 @@ export default function MenuCarousel({
     };
 
     // Exponer función para testing directo
-    (window as any).testCarouselFocus = (itemName: string) => {
+    (window as unknown as Record<string, (itemName: string) => void>).testCarouselFocus = (itemName: string) => {
       const event = new CustomEvent('focusMenuItem', {
         detail: { itemName }
       });
@@ -245,8 +245,8 @@ export default function MenuCarousel({
     };
 
     return () => {
-      delete (window as any).rotateCarouselTo;
-      delete (window as any).testCarouselFocus;
+      delete (window as unknown as Record<string, unknown>).rotateCarouselTo;
+      delete (window as unknown as Record<string, unknown>).testCarouselFocus;
     };
   }, [isClient, menuItems, rotateToIndex]);
 

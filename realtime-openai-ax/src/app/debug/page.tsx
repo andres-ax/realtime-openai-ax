@@ -155,7 +155,7 @@ export default function DebugPage() {
         try {
           const message = JSON.parse(event.data);
           addLog(`📨 WebSocket message: ${message.type}`);
-        } catch (error) {
+        } catch {
           addLog(`📨 WebSocket raw message: ${event.data}`);
         }
       };

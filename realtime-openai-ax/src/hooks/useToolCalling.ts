@@ -9,15 +9,56 @@ import { useCallback, useEffect } from 'react';
  * Implementación directa sin capas de abstracción
  */
 
+// 🎯 Definición de tipos TypeScript robustos (Type Safety Pattern)
+interface FunctionCallMessage {
+  type: string;
+  item?: {
+    type: string;
+    name?: string;
+    arguments?: string | Record<string, unknown>;
+    call_id?: string;
+  };
+  function_call?: {
+    name: string;
+    arguments: string | Record<string, unknown>;
+  };
+  delta?: {
+    name?: string;
+    arguments?: string | Record<string, unknown>;
+  };
+}
+
+interface ToolExecutionResult {
+  success: boolean;
+  error?: string;
+  details?: Record<string, unknown>;
+  data?: unknown;
+  message?: string;
+  [key: string]: unknown; // Permitir propiedades adicionales
+}
+
+interface JsonParsingResult {
+  error?: string;
+  raw?: string;
+  context?: string;
+  sanitized?: string;
+  [key: string]: unknown;
+}
+
+interface WindowWithGlobals extends Window {
+  processFunctionCall?: (message: FunctionCallMessage) => Promise<ToolExecutionResult | null>;
+  executeToolFunction?: (name: string, args: Record<string, unknown>) => Promise<ToolExecutionResult>;
+}
+
 export interface ToolFunction {
   name: string;
   description: string;
-  parameters: any;
-  handler: (args: any) => Promise<any> | any;
+  parameters: Record<string, unknown>;
+  handler: (args: Record<string, unknown>) => Promise<ToolExecutionResult> | ToolExecutionResult;
 }
 
 interface UseToolCallingOptions {
-  onToolCall?: (name: string, args: any, result: any) => void;
+  onToolCall?: (name: string, args: Record<string, unknown>, result: ToolExecutionResult) => void;
   onError?: (error: Error) => void;
 }
 
@@ -49,36 +90,37 @@ export const TOOL_FUNCTIONS: Record<string, ToolFunction> = {
       },
       required: ['menu_item']
     },
-    handler: (args: { menu_item: string }) => {
-      console.log(`[TOOL] 🎯 FOCUS_MENU_ITEM CALLED! Item: ${args.menu_item}`);
+    handler: (args: Record<string, unknown>): ToolExecutionResult => {
+      const { menu_item } = args as { menu_item: string };
+      console.log(`[TOOL] 🎯 FOCUS_MENU_ITEM CALLED! Item: ${menu_item}`);
       console.log(`[TOOL] 🎯 Args received:`, args);
       
       // Disparar evento para que el MenuCarousel React lo maneje
       const focusEvent = new CustomEvent('focusMenuItem', {
-        detail: { itemName: args.menu_item }
+        detail: { itemName: menu_item }
       });
       
-      console.log(`[TOOL] 📡 Dispatching focusMenuItem event for: ${args.menu_item}`);
+      console.log(`[TOOL] 📡 Dispatching focusMenuItem event for: ${menu_item}`);
       window.dispatchEvent(focusEvent);
       
       // También buscar elemento DOM para compatibilidad con vanilla JS
-      const itemElement = document.querySelector(`[data-menu-item="${args.menu_item}"]`);
+      const itemElement = document.querySelector(`[data-menu-item="${menu_item}"]`);
       
       if (itemElement) {
-        console.log(`[TOOL] ✅ Found DOM element for: ${args.menu_item}`);
+        console.log(`[TOOL] ✅ Found DOM element for: ${menu_item}`);
         itemElement.classList.add('focused');
         setTimeout(() => itemElement.classList.remove('focused'), 2000);
       } else {
-        console.log(`[TOOL] ⚠️ DOM element not found for: ${args.menu_item}`);
+        console.log(`[TOOL] ⚠️ DOM element not found for: ${menu_item}`);
       }
       
       // Verificar que el evento se disparó
-      console.log(`[TOOL] 🎉 Focus event dispatched successfully for: ${args.menu_item}`);
+      console.log(`[TOOL] 🎉 Focus event dispatched successfully for: ${menu_item}`);
       
       return { 
         success: true, 
-        message: `Showing this menu item to the user:\n• ${args.menu_item}`,
-        focused_item: args.menu_item
+        message: `Showing this menu item to the user:\n• ${menu_item}`,
+        focused_item: menu_item
       };
     }
   },
@@ -128,34 +170,35 @@ export const TOOL_FUNCTIONS: Record<string, ToolFunction> = {
       },
       required: ['cart', 'customer_confirm']
     },
-    handler: (args: { cart: Array<{menu_item: string, quantity: number}>; customer_confirm: string }) => {
+    handler: (args: Record<string, unknown>): ToolExecutionResult => {
+      const { cart, customer_confirm } = args as { cart: Array<{menu_item: string, quantity: number}>; customer_confirm: string };
       console.log(`[TOOL] 🛒 Updating order:`, args);
       
       // Disparar evento para actualizar el carrito completo
       const orderEvent = new CustomEvent('updateOrder', {
         detail: {
-          cart: args.cart,
-          customerConfirm: args.customer_confirm
+          cart: cart,
+          customerConfirm: customer_confirm
         }
       });
       
       window.dispatchEvent(orderEvent);
       
       // Si el cliente confirma, disparar evento para ir a pago
-      if (args.customer_confirm === 'yes') {
+      if (customer_confirm === 'yes') {
         const paymentEvent = new CustomEvent('proceedToPayment', {
-          detail: { cart: args.cart }
+          detail: { cart: cart }
         });
         window.dispatchEvent(paymentEvent);
       }
       
-      const total = args.cart.reduce((sum, item) => sum + item.quantity, 0);
+      const total = cart.reduce((sum, item) => sum + item.quantity, 0);
       
       return { 
         success: true, 
-        message: `Order updated: ${args.cart.length} items, Total items: ${total}`,
-        cart: args.cart,
-        customer_confirm: args.customer_confirm
+        message: `Order updated: ${cart.length} items, Total items: ${total}`,
+        cart: cart,
+        customer_confirm: customer_confirm
       };
     }
   },
@@ -212,7 +255,7 @@ export const TOOL_FUNCTIONS: Record<string, ToolFunction> = {
       },
       required: ['confirm']
     },
-    handler: (args: any) => {
+    handler: (args: Record<string, unknown>): ToolExecutionResult => {
       console.log('[TOOL] 📝 Updating order data:', args);
       
       // Disparar evento para actualizar datos del pedido y UI
@@ -254,7 +297,7 @@ export const TOOL_FUNCTIONS: Record<string, ToolFunction> = {
         cart_summary: { type: 'object', description: 'Current cart summary' }
       }
     },
-    handler: (args: any) => {
+    handler: (args: Record<string, unknown>): ToolExecutionResult => {
       console.log('[TOOL] 💳 Transferring to payment agent:', args);
       
       // Disparar evento para cambio de vista a checkout
@@ -287,7 +330,7 @@ export const TOOL_FUNCTIONS: Record<string, ToolFunction> = {
         context: { type: 'string', description: 'Context for the transfer' }
       }
     },
-    handler: (args: any) => {
+    handler: (args: Record<string, unknown>): ToolExecutionResult => {
       console.log('[TOOL] 🛍️ Transferring to menu/sales agent:', args);
       
       // Disparar evento para volver al menú
@@ -357,7 +400,7 @@ export const TOOL_FUNCTIONS: Record<string, ToolFunction> = {
 export function useToolCalling(options: UseToolCallingOptions = {}) {
   
   // 🔧 Ejecutar función de herramienta
-  const executeToolFunction = useCallback(async (name: string, args: any = {}) => {
+  const executeToolFunction = useCallback(async (name: string, args: Record<string, unknown> = {}) => {
     try {
       console.log(`[TOOL-CALLING] 🔧 Executing: ${name}`, args);
       
@@ -406,8 +449,83 @@ export function useToolCalling(options: UseToolCallingOptions = {}) {
     }));
   }, []);
 
+  // 🛡️ Validador y Sanitizador de JSON Robusto (Validator + Decorator Pattern)
+  const safeJsonParser = useCallback((rawArgs: unknown, context: string): JsonParsingResult | Record<string, unknown> => {
+    // Si ya es un objeto, retornarlo directamente
+    if (typeof rawArgs !== 'string') {
+      console.log(`[🛡️ JSON-VALIDATOR] Object detected in ${context}, skipping parsing`);
+      return rawArgs as Record<string, unknown>;
+    }
+
+    console.log(`[🛡️ JSON-VALIDATOR] Validating JSON string in ${context}:`, rawArgs.substring(0, 100) + '...');
+    
+    // Validación previa: verificar estructura básica
+    const trimmed = rawArgs.trim();
+    if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) {
+      console.warn(`[🛡️ JSON-VALIDATOR] Invalid JSON structure in ${context}, attempting fallback`);
+      return { error: 'Invalid JSON structure', raw: rawArgs };
+    }
+
+    // Sanitización de caracteres problemáticos
+    let sanitized = trimmed;
+    
+    // Detectar y corregir cadenas no terminadas
+    const openQuotes = (sanitized.match(/"/g) || []).length;
+    if (openQuotes % 2 !== 0) {
+      console.warn(`[🛡️ JSON-VALIDATOR] Unterminated string detected in ${context}, attempting repair`);
+      // Intentar cerrar la última cadena abierta
+      const lastQuoteIndex = sanitized.lastIndexOf('"');
+      const afterLastQuote = sanitized.substring(lastQuoteIndex + 1);
+      
+      // Si después de la última comilla hay contenido sin cerrar
+      if (afterLastQuote && !afterLastQuote.includes('"')) {
+        sanitized = sanitized + '"';
+        console.log(`[🛡️ JSON-VALIDATOR] Repaired unterminated string in ${context}`);
+      }
+    }
+
+    // Estrategia de parsing con múltiples fallbacks (Chain of Responsibility Pattern)
+    const parsingStrategies = [
+      // Estrategia 1: Parsing directo
+      () => JSON.parse(sanitized),
+      
+      // Estrategia 2: Parsing con corrección de comas finales
+      () => JSON.parse(sanitized.replace(/,(\s*[}\]])/g, '$1')),
+      
+      // Estrategia 3: Parsing con escape de caracteres especiales
+      () => JSON.parse(sanitized.replace(/\n/g, '\\n').replace(/\r/g, '\\r').replace(/\t/g, '\\t')),
+      
+      // Estrategia 4: Fallback a objeto de error estructurado
+      () => ({ 
+        error: 'JSON parsing failed', 
+        raw: rawArgs,
+        context: context,
+        sanitized: sanitized 
+      })
+    ];
+
+    for (let i = 0; i < parsingStrategies.length; i++) {
+      try {
+        const result = parsingStrategies[i]();
+        if (i > 0) {
+          console.log(`[🛡️ JSON-VALIDATOR] ✅ Parsing successful with strategy ${i + 1} in ${context}`);
+        }
+        return result;
+      } catch (error) {
+        if (i < parsingStrategies.length - 1) {
+          console.warn(`[🛡️ JSON-VALIDATOR] Strategy ${i + 1} failed in ${context}, trying next...`);
+        } else {
+          console.error(`[🛡️ JSON-VALIDATOR] ❌ All parsing strategies failed in ${context}:`, error);
+        }
+      }
+    }
+
+    // Este punto nunca debería alcanzarse debido al fallback final
+    return { error: 'Unexpected parsing failure', raw: rawArgs, context: context };
+  }, []);
+
   // 🎯 Procesar mensaje de function call de OpenAI
-  const processFunctionCall = useCallback(async (message: any) => {
+  const processFunctionCall = useCallback(async (message: FunctionCallMessage): Promise<ToolExecutionResult | null> => {
     console.log('[TOOL-CALLING] 🔍 Processing message:', message.type);
     
     // Log específico para response.output_item.done
@@ -428,12 +546,19 @@ export function useToolCalling(options: UseToolCallingOptions = {}) {
       console.log('[TOOL-CALLING] 🔧 Function call delta:', name, args);
       
       try {
-        const parsedArgs = typeof args === 'string' ? JSON.parse(args) : args;
+        const parsedArgs = safeJsonParser(args, 'function_call_delta');
         console.log('[TOOL-CALLING] 📋 Parsed args:', parsedArgs);
+        
+        // Verificar si el parsing falló
+        if (parsedArgs?.error) {
+          console.error('[TOOL-CALLING] ❌ JSON parsing failed:', parsedArgs);
+          return { success: false, error: 'Invalid function call arguments', details: parsedArgs };
+        }
+        
         return await executeToolFunction(name, parsedArgs);
       } catch (error) {
-        console.error('[TOOL-CALLING] ❌ Error parsing function call args:', error);
-        return { success: false, error: 'Invalid function call arguments' };
+        console.error('[TOOL-CALLING] ❌ Error in function call delta processing:', error);
+        return { success: false, error: 'Function call delta processing failed' };
       }
     }
     
@@ -447,15 +572,21 @@ export function useToolCalling(options: UseToolCallingOptions = {}) {
       console.log('[TOOL-CALLING] 🆔 Call ID:', call_id);
       
       try {
-        const parsedArgs = typeof args === 'string' ? JSON.parse(args) : args;
+        const parsedArgs = safeJsonParser(args, 'unified_function_call');
         console.log('[TOOL-CALLING] ✅ Parsed unified args:', parsedArgs);
-        const result = await executeToolFunction(name, parsedArgs);
+        
+        // Verificar si el parsing falló
+        if (parsedArgs?.error) {
+          console.error('[TOOL-CALLING] ❌ Unified JSON parsing failed:', parsedArgs);
+          return { success: false, error: 'Invalid unified function call arguments', details: parsedArgs };
+        }
+        
+        const result = await executeToolFunction(name || '', parsedArgs);
         console.log('[TOOL-CALLING] 🎉 Function execution result:', result);
         return result;
       } catch (error) {
-        console.error('[TOOL-CALLING] ❌ Error parsing unified function call args:', error);
-        console.error('[TOOL-CALLING] 💥 Error details:', error instanceof Error ? error.message : String(error));
-        return { success: false, error: 'Invalid unified function call arguments' };
+        console.error('[TOOL-CALLING] ❌ Error in unified function call processing:', error);
+        return { success: false, error: 'Unified function call processing failed' };
       }
     }
     
@@ -465,26 +596,35 @@ export function useToolCalling(options: UseToolCallingOptions = {}) {
       console.log('[TOOL-CALLING] 🔧 Legacy function call:', name, args);
       
       try {
-        const parsedArgs = typeof args === 'string' ? JSON.parse(args) : args;
+        const parsedArgs = safeJsonParser(args, 'legacy_function_call');
         console.log('[TOOL-CALLING] 📋 Parsed legacy args:', parsedArgs);
+        
+        // Verificar si el parsing falló
+        if (parsedArgs?.error) {
+          console.error('[TOOL-CALLING] ❌ Legacy JSON parsing failed:', parsedArgs);
+          return { success: false, error: 'Invalid legacy function call arguments', details: parsedArgs };
+        }
+        
         return await executeToolFunction(name, parsedArgs);
       } catch (error) {
-        console.error('[TOOL-CALLING] ❌ Error parsing legacy function call args:', error);
-        return { success: false, error: 'Invalid legacy function call arguments' };
+        console.error('[TOOL-CALLING] ❌ Error in legacy function call processing:', error);
+        return { success: false, error: 'Legacy function call processing failed' };
       }
     }
     
     return null;
-  }, [executeToolFunction]);
+  }, [executeToolFunction, safeJsonParser]);
 
   // Exponer processFunctionCall globalmente para testing
   useEffect(() => {
-    (window as any).processFunctionCall = processFunctionCall;
-    (window as any).executeToolFunction = executeToolFunction;
+    const globalWindow = window as WindowWithGlobals;
+    globalWindow.processFunctionCall = processFunctionCall;
+    globalWindow.executeToolFunction = executeToolFunction;
     
     return () => {
-      delete (window as any).processFunctionCall;
-      delete (window as any).executeToolFunction;
+      const globalWindow = window as WindowWithGlobals;
+      delete globalWindow.processFunctionCall;
+      delete globalWindow.executeToolFunction;
     };
   }, [processFunctionCall, executeToolFunction]);
 

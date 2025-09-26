@@ -56,15 +56,18 @@ export async function GET(request: NextRequest) {
     const menuData = JSON.parse(menuFileContent);
 
     // 🏗️ Builder Pattern: Construir respuesta estructurada
-    const menuItems: MenuItemData[] = Object.entries(menuData.items).map(([name, item]: [string, any]) => ({
-      name,
-      price: item.price,
-      description: item.description,
-      category: item.category,
-      image: menuData.images[name] || '/images/menu/default.png',
-      available: item.available !== false, // Por defecto disponible
-      nutritional_info: item.nutritional_info
-    }));
+    const menuItems: MenuItemData[] = Object.entries(menuData.items).map(([name, item]) => {
+      const menuItem = item as Record<string, unknown>;
+      return {
+        name,
+        price: menuItem.price as number,
+        description: menuItem.description as string,
+        category: menuItem.category as string,
+        image: menuData.images[name] || '/images/menu/default.png',
+        available: menuItem.available !== false, // Por defecto disponible
+        nutritional_info: menuItem.nutritional_info as { calories: number; protein: number; carbs: number; fat: number; }
+      };
+    });
 
     // 📊 Category Extraction Pattern: Extraer categorías únicas
     const categories = [...new Set(menuItems.map(item => item.category))];

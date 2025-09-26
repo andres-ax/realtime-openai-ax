@@ -17,8 +17,8 @@ interface VoiceInterfaceProps {
   onSessionStop?: () => void;
   onStatusChange?: (status: string, isActive: boolean) => void;
   onAgentSwitch?: (agent: AgentType) => void;
-  onMessage?: (message: any) => void;
-  onFunctionCall?: (functionName: string, args: any) => void;
+  onMessage?: (message: unknown) => void;
+  onFunctionCall?: (functionName: string, args: Record<string, unknown>) => void;
   className?: string;
 }
 
@@ -40,6 +40,7 @@ export default function VoiceInterface({
     connect,
     disconnect,
     switchAgent,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     sendMessage
   } = useWebRTC({
     onStatusChange: (newStatus) => {
@@ -53,7 +54,7 @@ export default function VoiceInterface({
     },
     onMessage: (message) => {
       onMessage?.(message);
-      handleRealtimeMessage(message);
+      handleRealtimeMessage(message as Record<string, unknown>);
     },
     onError: (error) => {
       console.error('[VOICE-INTERFACE] Error:', error);
@@ -61,9 +62,10 @@ export default function VoiceInterface({
   });
 
   // 🎯 Function Calling Handler
-  const handleRealtimeMessage = useCallback((message: any) => {
-    if (message.type === 'response.function_call_delta') {
-      const { name, arguments: args } = message.function_call;
+  const handleRealtimeMessage = useCallback((message: Record<string, unknown>) => {
+    if (message.type === 'response.function_call_delta' && typeof message.function_call === 'object' && message.function_call) {
+      const functionCall = message.function_call as { name: string; arguments: Record<string, unknown> };
+      const { name, arguments: args } = functionCall;
       onFunctionCall?.(name, args);
       
       switch (name) {

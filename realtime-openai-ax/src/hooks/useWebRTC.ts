@@ -24,7 +24,7 @@ interface SessionData {
 
 interface UseWebRTCOptions {
   onStatusChange?: (status: VoiceStatus) => void;
-  onMessage?: (message: any) => void;
+  onMessage?: (message: unknown) => void;
   onError?: (error: Error) => void;
   onAgentSwitch?: (agent: AgentType) => void;
 }
@@ -36,7 +36,7 @@ interface UseWebRTCReturn {
   connect: (agentType?: AgentType) => Promise<void>;
   disconnect: () => void;
   switchAgent: (newAgent: AgentType) => Promise<void>;
-  sendMessage: (message: any) => void;
+  sendMessage: (message: unknown) => void;
 }
 
 // Configuraciones de agentes (mantenemos nuestra lógica de dominio)
@@ -114,7 +114,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
   // 🔧 Tool calling integration
-  const { processFunctionCall, getToolDefinitions, getRealtimeToolDefinitions } = useToolCalling({
+  const { processFunctionCall, getRealtimeToolDefinitions } = useToolCalling({
     onToolCall: (name, args, result) => {
       console.log(`[WEBRTC] 🔧 Tool executed: ${name}`, { args, result });
       options.onMessage?.({ type: 'tool_result', name, args, result });
@@ -130,6 +130,38 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     options.onStatusChange?.(newStatus);
     console.log(`[WEBRTC] Status: ${newStatus}`);
   }, [options]);
+
+  // 🔌 Desconexión limpia - definida antes de connect para evitar referencia circular
+  const disconnect = useCallback(() => {
+    console.log('[WEBRTC] 🔌 Disconnecting...');
+
+    // Cerrar data channel
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close();
+      dataChannelRef.current = null;
+    }
+
+    // Cerrar peer connection
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+      peerConnectionRef.current = null;
+    }
+
+    // Detener media stream
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+
+    // Limpiar audio element
+    if (audioElementRef.current) {
+      audioElementRef.current.srcObject = null;
+      audioElementRef.current = null;
+    }
+
+    updateStatus('disconnected');
+    console.log('[WEBRTC] ✅ Disconnected successfully');
+  }, [updateStatus]);
 
   // 🔧 Configurar tools después de establecer conexión
   const configureTools = useCallback((agentType: AgentType, retryCount = 0) => {
@@ -357,39 +389,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     } finally {
       setIsConnecting(false);
     }
-  }, [updateStatus, options]);
-
-  // 🔌 Desconexión limpia
-  const disconnect = useCallback(() => {
-    console.log('[WEBRTC] 🔌 Disconnecting...');
-
-    // Cerrar data channel
-    if (dataChannelRef.current) {
-      dataChannelRef.current.close();
-      dataChannelRef.current = null;
-    }
-
-    // Cerrar peer connection
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-      peerConnectionRef.current = null;
-    }
-
-    // Detener media stream
-    if (mediaStreamRef.current) {
-      mediaStreamRef.current.getTracks().forEach(track => track.stop());
-      mediaStreamRef.current = null;
-    }
-
-    // Limpiar audio element
-    if (audioElementRef.current) {
-      audioElementRef.current.srcObject = null;
-      audioElementRef.current = null;
-    }
-
-    updateStatus('disconnected');
-    console.log('[WEBRTC] ✅ Disconnected successfully');
-  }, [updateStatus]);
+  }, [updateStatus, options, configureTools, disconnect, processFunctionCall]);
 
   // 🔄 Cambio de agente (reconectar con nuevo agente)
   const switchAgent = useCallback(async (newAgent: AgentType) => {
@@ -424,7 +424,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
   }, [status, currentAgent, isConnecting, disconnect, connect, options]);
 
   // 📨 Enviar mensaje via data channel
-  const sendMessage = useCallback((message: any) => {
+  const sendMessage = useCallback((message: unknown) => {
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
       const messageStr = typeof message === 'string' ? message : JSON.stringify(message);
       dataChannelRef.current.send(messageStr);

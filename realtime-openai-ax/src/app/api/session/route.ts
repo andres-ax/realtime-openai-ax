@@ -27,7 +27,7 @@ interface SessionResponse {
   expires_at: number;
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     console.log('[SESSION] 🔑 API key request received');
     

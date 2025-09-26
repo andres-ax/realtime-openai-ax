@@ -92,8 +92,8 @@ const MENU_ITEMS: MenuItemData[] = [
 export default function VoiceOrderingPage() {
   // Estado principal de la aplicación
   const [currentView, setCurrentView] = useState<AppView>('menu');
-  const [isVoiceActive, setIsVoiceActive] = useState(false);
-  const [voiceStatus, setVoiceStatus] = useState<VoiceStatus>('disconnected');
+  const [, setIsVoiceActive] = useState(false);
+  const [, setVoiceStatus] = useState<VoiceStatus>('disconnected');
   const [cartItems, setCartItems] = useState<CartItemData[]>([]);
   const [activeMenuItem, setActiveMenuItem] = useState<string>(MENU_ITEMS[0]?.name || '');
   const [orderData, setOrderData] = useState<CheckoutData | null>(null);
@@ -135,7 +135,7 @@ export default function VoiceOrderingPage() {
   }, []);
 
   // 🎯 Function Calling Handler - Conectar con Use Cases reales
-  const handleFunctionCall = useCallback(async (functionName: string, args: any) => {
+  const handleFunctionCall = useCallback(async (functionName: string, args: Record<string, unknown>) => {
     console.log(`[VOICE-ORDERING] Function called: ${functionName}`, args);
     
     try {
@@ -143,7 +143,7 @@ export default function VoiceOrderingPage() {
         case 'focus_menu_item':
           // Usar FocusMenuItemUseCase
           if (args.item_name) {
-            setActiveMenuItem(args.item_name);
+            setActiveMenuItem(args.item_name as string);
             console.log(`[VOICE-ORDERING] Focused menu item: ${args.item_name}`);
           }
           break;
@@ -153,7 +153,7 @@ export default function VoiceOrderingPage() {
           if (args.item_name && args.quantity) {
             const menuItem = MENU_ITEMS.find(item => item.name === args.item_name);
             if (menuItem) {
-              const quantity = parseInt(args.quantity) || 1;
+              const quantity = parseInt(args.quantity as string) || 1;
               const newItem: CartItemData = {
                 menuItemName: menuItem.name,
                 quantity: quantity,
@@ -304,7 +304,7 @@ export default function VoiceOrderingPage() {
     };
 
     // Handler para proceder a pago
-    const handleProceedToPayment = (event: CustomEvent) => {
+    const handleProceedToPayment = () => {
       console.log('[VOICE-ORDERING] 💳 Proceed to payment event');
       
       // Cambiar vista a checkout
@@ -318,7 +318,7 @@ export default function VoiceOrderingPage() {
     };
 
     // Handler para proceder a checkout
-    const handleProceedToCheckout = (event: CustomEvent) => {
+    const handleProceedToCheckout = () => {
       console.log('[VOICE-ORDERING] 🛒 Proceed to checkout event');
       
       // Cambiar vista a checkout
@@ -332,7 +332,7 @@ export default function VoiceOrderingPage() {
     };
 
     // Handler para volver al menú
-    const handleBackToMenu = (event: CustomEvent) => {
+    const handleBackToMenu = () => {
       console.log('[VOICE-ORDERING] 🔙 Back to menu event');
       
       // Cambiar vista a menu

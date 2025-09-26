@@ -49,7 +49,7 @@ export default function OrderComplete({
         <h2>Thank you for your order{customerName ? `, ${customerName}` : ''}!</h2>
         
         <div className={styles.orderInfo}>
-          <p>You'll get a confirmation email and shipping updates.</p>
+          <p>You&apos;ll get a confirmation email and shipping updates.</p>
           <p className={styles.orderNumber}>
             Order #<span>{orderNumber}</span>
           </p>
@@ -64,9 +64,9 @@ export default function OrderComplete({
         <div className={styles.nextSteps}>
           <h3>What happens next?</h3>
           <ul>
-            <li>📧 You'll receive an email confirmation shortly</li>
+            <li>📧 You&apos;ll receive an email confirmation shortly</li>
             <li>👨‍🍳 Our kitchen will start preparing your order</li>
-            <li>🚚 You'll get tracking updates via SMS and email</li>
+            <li>🚚 You&apos;ll get tracking updates via SMS and email</li>
             <li>🎉 Enjoy your delicious meal!</li>
           </ul>
         </div>
