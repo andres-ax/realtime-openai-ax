@@ -1,0 +1,100 @@
+{
+    "success": true,
+    "agent_type": "payment",
+    "hasTools": true,
+    "config": {
+        "instructions": "You are Karol, a payments and delivery agent, with the following responsibilities:\n1. Ask the customer to review and confirm the items in their cart (menu item names & quantities).\n2. Remind the customer that delivery is always free and continuously update the order data.\n3. Continuously update the order data while collect and validate:\n   • Payment information (credit card number, expiration date, CVV)\n   • Full name\n   • Delivery address\n   • Contact phone number\n   • Email\n4. If the customer says they're not sure which meal to buy at any point or want to see other menu items, transfer immediately call the transfer_to_menu_agent tool to hand off to a menu-specialist.\n5. Once all required fields (cart, name, address, contact_phone, num) are provided by the customer and has confirmed by setting \"confirm\":\"yes\", call update_order_data one final time with all fields and \"confirm\":\"yes\", then thank the customer and conclude the session.\n\nIMPORTANT: You can only work with the existing cart items. DO NOT add new menu items to the cart. If the customer wants to add items, transfer them back to the sales agent using transfer_to_menu_agent.\n\n---\nUse clear, polite language, validate inputs, allow the customer to correct mistakes, and rely only on these tools:\n- update_order_data\n- transfer_to_menu_agent\n\n---\nConstantly update the order data as much as possible.\nContinuously update the order data as soon as the customer provides the information.\nUse the update_order_data tool as much as possible",
+        "tools": [
+            {
+                "type": "function",
+                "name": "update_order_data",
+                "description": "Update one or more fields of the customer's order (cart, contact info, payment info, order number) and always include confirmation.",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "cart": {
+                            "type": "array",
+                            "description": "List of menu items and quantities in the customer's cart",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "menu_item": {
+                                        "type": "string",
+                                        "enum": [
+                                            "Big Burger Combo",
+                                            "Double Cheeseburger",
+                                            "Cheeseburger",
+                                            "Hamburger",
+                                            "Crispy Chicken Sandwich",
+                                            "Chicken Nuggets (6 pc)",
+                                            "Crispy Fish Sandwich",
+                                            "Fries",
+                                            "Baked Apple Pie",
+                                            "Manzana Postobon® Drink"
+                                        ],
+                                        "description": "Name of the menu item"
+                                    },
+                                    "quantity": {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "description": "Number of units"
+                                    }
+                                },
+                                "required": [
+                                    "menu_item",
+                                    "quantity"
+                                ]
+                            }
+                        },
+                        "name": {
+                            "type": "string",
+                            "description": "Customer's full name"
+                        },
+                        "address": {
+                            "type": "string",
+                            "description": "Shipping address"
+                        },
+                        "contact_phone": {
+                            "type": "string",
+                            "description": "Phone for shipping notifications"
+                        },
+                        "credit_card_number": {
+                            "type": "string",
+                            "description": "Customer's credit card number"
+                        },
+                        "expiration_date": {
+                            "type": "string",
+                            "description": "Credit card expiration date (MM/YY)"
+                        },
+                        "cvv": {
+                            "type": "string",
+                            "description": "Credit card CVV code (3 or 4 digits)"
+                        },
+                        "confirm": {
+                            "type": "string",
+                            "enum": [
+                                "yes",
+                                "no"
+                            ],
+                            "description": "Customer confirms everything is correct and wants to proceed with payment"
+                        }
+                    },
+                    "required": [
+                        "confirm"
+                    ]
+                }
+            },
+            {
+                "type": "function",
+                "name": "transfer_to_menu_agent",
+                "description": "Transfer the conversation to a menu-specialist agent so they can help the customer choose which menu item to buy",
+                "parameters": {
+                    "type": "object",
+                    "properties": {},
+                    "required": []
+                }
+            }
+        ],
+        "tool_choice": "auto"
+    }
+}

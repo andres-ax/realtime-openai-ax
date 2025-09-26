@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+  <title>Burger Spot - Choose Your Meal</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+
+<body>
+  <h1>Choose Your Meal</h1>
+
+      <section class="carousel-container" role="region" aria-label="3D menu carousel">
+          <div class="carousel" id="carousel">
+        <div class="carousel-item" data-menu-item="Big Burger Combo">
+          <img src="/static/Menu/combo-postobon.png" alt="Big Burger Combo">
+          <div class="carousel-item-text">
+            <h3>Big Burger Combo</h3>
+            <p class="smaller-heading">$14.89</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Double Cheeseburger">
+          <img src="/static/Menu/Double_Cheeseburger.png" alt="Double Cheeseburger">
+          <div class="carousel-item-text">
+            <h3>Double Cheeseburger</h3>
+            <p class="smaller-heading">$5.79</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Cheeseburger">
+          <img src="/static/Menu/Cheeseburger.png" alt="Cheeseburger">
+          <div class="carousel-item-text">
+            <h3>Cheeseburger</h3>
+            <p class="smaller-heading">$3.49</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Hamburger">
+          <img src="/static/Menu/Hamburger.png" alt="Hamburger">
+          <div class="carousel-item-text">
+            <h3>Hamburger</h3>
+            <p class="smaller-heading">$2.99</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Crispy Chicken Sandwich">
+          <img src="/static/Menu/Crispy_Chicken_Sandwich.png" alt="Crispy Chicken Sandwich">
+          <div class="carousel-item-text">
+            <h3>Crispy Chicken Sandwich</h3>
+            <p class="smaller-heading">$4.99</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Chicken Nuggets (6 pc)">
+          <img src="/static/Menu/Chicken_Nuggets__6_pc.png" alt="Chicken Nuggets (6 pc)">
+          <div class="carousel-item-text">
+            <h3>Chicken Nuggets (6 pc)</h3>
+            <p class="smaller-heading">$4.49</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Crispy Fish Sandwich">
+          <img src="/static/Menu/Filet_Fish_Sandwich.png" alt="Crispy Fish Sandwich">
+          <div class="carousel-item-text">
+            <h3>Crispy Fish Sandwich</h3>
+            <p class="smaller-heading">$5.29</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Fries">
+          <img src="/static/Menu/Fries.png" alt="Fries">
+          <div class="carousel-item-text">
+            <h3>Fries</h3>
+            <p class="smaller-heading">$3.19</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Baked Apple Pie">
+          <img src="/static/Menu/Apple_Pie.png" alt="Baked Apple Pie">
+          <div class="carousel-item-text">
+            <h3>Baked Apple Pie</h3>
+            <p class="smaller-heading">$1.79</p>
+          </div>
+        </div>
+        <div class="carousel-item" data-menu-item="Manzana Postobon® Drink">
+          <img src="/static/Menu/manzana-postobon-350-RET-1.png" alt="Manzana Postobon® Drink">
+          <div class="carousel-item-text">
+            <h3>Postobon Manzana Drink</h3>
+            <p class="smaller-heading">$1.49</p>
+          </div>
+        </div>
+      </div>
+  </section>
+
+  <!-- Microphone button with interchangeable icons -->
+  <button class="mic-button" id="micButton">
+    <!-- Microphone icon (visible by default) -->
+    <svg class="mic-icon" id="micIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 14c1.66 0 2.99-1.34 2.99-3L15 5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5.3-3c0 3-2.54 5.1-5.3 5.1S6.7 14 6.7 11H5c0 3.41 2.72 6.23 6 6.72V21h2v-3.28c3.28-.48 6-3.3 6-6.72h-1.7z"/>
+    </svg>
+    
+    <!-- Pause icon (initially hidden) -->
+    <svg class="pause-icon hidden" id="pauseIcon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+    </svg>
+  </button>
+  
+  <!-- Voice status elements -->
+  <div id="status">Disconnected</div>
+  <div id="activity"></div>
+
+  <!-- Live Cart Panel (controlled by LLM tools only) -->
+  <section id="live-cart" class="cart-panel hidden">
+    <div class="cart-header">
+      <h3>Your Order</h3>
+    </div>
+    <div id="live-cart-items" class="cart-items" role="list" aria-label="Current order items">
+      <!-- Dynamic cart items updated by LLM tools -->
+    </div>
+    <div class="cart-footer">
+      <div class="cart-total">
+        <span>Total:</span>
+        <span id="live-cart-total">$0.00</span>
+      </div>
+    </div>
+  </section>
+
+  <section id="checkout" class="white-section hidden" aria-labelledby="checkout-heading">
+    <div class="checkout-container">
+      <!-- Left Panel: Cart Summary -->
+      <div class="cart-summary">
+        <h2 id="checkout-heading">Checkout</h2>
+        <p id="cart-count" aria-live="polite">0 items in cart</p>
+        <div id="cart-items" role="list" aria-label="Items in your cart">
+          <!-- dynamically rendered cart lines -->
+        </div>
+        <div class="total">
+          <span>Total:</span>
+          <span id="cart-total" aria-live="polite">$0.00</span>
+        </div>
+        <button id="proceed-payment-btn" class="btn place-order-btn">Proceed to Payment</button>
+      </div>
+      <!-- Right Panel: Order & Delivery Details -->
+      <div class="order-details">
+        <h3>Order &amp; Delivery Details</h3>
+        <div class="details-grid">
+        <div class="map" aria-label="Delivery map">
+          <iframe
+            id="map-frame"
+            src="https://www.google.com/maps/embed/v1/place?key=AIzaSyBLXq4XwucYgswkEICrCiSKqjshpjt2DZg&q=Shared+Locker%40Commons%2C+15255+NE+40th+St%2C+Redmond%2C+WA+98052"
+            width="100%"
+            height="300"
+            style="border:0;"
+            allowfullscreen
+            loading="lazy">
+          </iframe>
+        </div>
+        <fieldset class="shipping-info">
+          <legend>Delivery Information</legend>
+          <p id="shipping-name">Enoc Silva</p>
+          <label for="shipping-address-input">Delivery Address</label>
+          <input type="text" id="shipping-address-input" autocomplete="address-line1" value="Shared Locker@Commons, 15255 NE 40th St, Redmond, WA 98052" />
+        </fieldset>
+        <fieldset class="payment-method">
+          <legend>Payment Method</legend>
+          <p id="payment-number">Card: 1234 1234 1234 1234</p>
+          <p id="payment-expiration">(exp: --/--)</p>
+          <p id="checkout-cvv">***</p>
+        </fieldset>
+        <fieldset class="delivery-method">
+          <legend>Delivery Method</legend>
+          <p id="delivery-method">Free Delivery – $0.00</p>
+        </fieldset>
+        <!-- Contact Info -->
+        <fieldset class="contact-info">
+          <legend>Contact Information</legend>
+          <label for="checkout-contact_phone">Phone</label>
+          <span id="checkout-contact_phone" aria-live="polite"></span>
+          <label for="checkout-email">Email</label>
+          <span id="checkout-email" aria-live="polite"></span>
+        </fieldset>
+
+        </div> <!-- end details-grid -->
+      </div>
+    </div>
+  </section>
+
+  <!-- Success / Thank‑you screen (hidden by default) -->
+  <section id="order-complete" class="white-section hidden">
+    <div class="success-card">
+      <!-- Green checkmark SVG -->
+      <svg class="check-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 16.17l-3.88-3.88-1.41 1.41L9 19 20.3 7.71l-1.41-1.41z"/>
+      </svg>
+
+      <h2>Thank you for your order</h2>
+      <p>You'll get a confirmation email and shipping updates.</p>
+      <p>Order #<span id="order-number">—</span></p>
+    </div>
+  </section>
+
+
+
+  <style>
+    /* Style for pause icon */
+    .pause-icon {
+      width: 32px;
+      height: 32px;
+      fill: white;
+    }
+    
+    /* Class to hide elements */
+    .hidden {
+      display: none !important;
+    }
+  </style>
+  
+  <script>
+    // Pass Google Maps API key from backend to frontend
+    window.GOOGLE_MAPS_API_KEY = 'AIzaSyBLXq4XwucYgswkEICrCiSKqjshpjt2DZg';
+  </script>
+  
+  <script src="/static/carousel.js"></script>
+</body>
+</html>

@@ -1,0 +1,128 @@
+{
+    "object": "realtime.session",
+    "id": "sess_CK0j82LxjHAQcBCMAiaTA",
+    "model": "gpt-realtime",
+    "modalities": [
+        "audio",
+        "text"
+    ],
+    "instructions": "You are Luxora a food service sales agent with the following responsibilities:\n1. Help customers find the best meal for their needs\n2. Always use the focus_menu_item tool to highlight specific menu items when:\n   - talking about a menu item to the customer\n   - Customer mentions a menu item \n3. CONSTANTLY use the order tool to update the customer's cart throughout the conversation:\n   - When customer wants to add an item to their order\n   - When customer wants to remove an item from their order\n   - When customer wants to see their current order\n   - When customer confirms they want to purchase\n   - Keep the order updated in real-time as the conversation progresses\n\n---\nYou can only sell:\n- Big Burger Combo (Classic burger + fries + medium drink)  - $14.89 USD\n- Double Cheeseburger (Two patties, American cheese)  - $5.79 USD\n- Cheeseburger (Pickles, onions, ketchup, mustard)  - $3.49 USD\n- Hamburger (Simple & classic)  - $2.99 USD\n- Crispy Chicken Sandwich (Lettuce, mayo)  - $4.99 USD\n- Chicken Nuggets (6 pc) (Choice of sauces)  - $4.49 USD\n- Crispy Fish Sandwich (Tartar sauce, shredded lettuce)  - $5.29 USD\n- Fries (Small/Medium/Large)  - $3.19 USD\n- Baked Apple Pie (Warm handheld pie)  - $1.79 USD\n- Manzana Postobon® Drink (Ice-cold, refreshing)  - $1.49 USD\n\nThe focus_menu_item tool controls an UI with pictures of the menu items. You will receive descriptions of the pictures the customer will see.\nThe order tool controls the cart display and order management. Use both tools constantly to provide the best experience.\n\nIMPORTANT: Update the order tool frequently to keep the customer's cart visible and current throughout the conversation.\n",
+    "voice": "alloy",
+    "output_audio_format": "pcm16",
+    "tools": [
+        {
+            "type": "function",
+            "name": "focus_menu_item",
+            "description": "Focus on a specific menu item, when the user mentions it",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "menu_item": {
+                        "type": "string",
+                        "enum": [
+                            "Big Burger Combo",
+                            "Double Cheeseburger",
+                            "Cheeseburger",
+                            "Hamburger",
+                            "Crispy Chicken Sandwich",
+                            "Chicken Nuggets (6 pc)",
+                            "Crispy Fish Sandwich",
+                            "Fries",
+                            "Baked Apple Pie",
+                            "Manzana Postobon® Drink"
+                        ],
+                        "description": "The name of the menu item to focus on"
+                    }
+                },
+                "required": [
+                    "menu_item"
+                ]
+            }
+        },
+        {
+            "type": "function",
+            "name": "order",
+            "description": "Update the customer's order and manage the cart display. Use this tool constantly to keep the order updated throughout the conversation.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "cart": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "menu_item": {
+                                    "type": "string",
+                                    "enum": [
+                                        "Big Burger Combo",
+                                        "Double Cheeseburger",
+                                        "Cheeseburger",
+                                        "Hamburger",
+                                        "Crispy Chicken Sandwich",
+                                        "Chicken Nuggets (6 pc)",
+                                        "Crispy Fish Sandwich",
+                                        "Fries",
+                                        "Baked Apple Pie",
+                                        "Manzana Postobon® Drink"
+                                    ],
+                                    "description": "The name of the menu item to purchase"
+                                },
+                                "quantity": {
+                                    "type": "integer",
+                                    "minimum": 1,
+                                    "description": "Number of units"
+                                }
+                            },
+                            "required": [
+                                "menu_item",
+                                "quantity"
+                            ]
+                        },
+                        "description": "The cart items in the customer's order"
+                    },
+                    "customer_confirm": {
+                        "type": "string",
+                        "enum": [
+                            "yes",
+                            "no",
+                            "review"
+                        ],
+                        "description": "Customer confirm the order to purchase"
+                    }
+                },
+                "required": [
+                    "cart",
+                    "customer_confirm"
+                ]
+            }
+        }
+    ],
+    "tool_choice": "auto",
+    "temperature": 0.8,
+    "max_response_output_tokens": "inf",
+    "turn_detection": {
+        "type": "server_vad",
+        "threshold": 0.5,
+        "prefix_padding_ms": 300,
+        "silence_duration_ms": 200,
+        "idle_timeout_ms": null,
+        "create_response": true,
+        "interrupt_response": true
+    },
+    "speed": 1.0,
+    "tracing": null,
+    "truncation": "auto",
+    "prompt": null,
+    "expires_at": 0,
+    "input_audio_noise_reduction": null,
+    "input_audio_format": "pcm16",
+    "input_audio_transcription": null,
+    "client_secret": {
+        "value": "ek_68d6760e1a9c81918c0119f4d3ca175f",
+        "expires_at": 1758885990
+    },
+    "include": null,
+    "agent_config": {
+        "type": "sales"
+    }
+}
