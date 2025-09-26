@@ -261,7 +261,7 @@ export class AgentConfigAdapter {
           name: 'Luxora',
           description: 'Friendly sales assistant specialized in menu recommendations',
           model: 'gpt-4o-realtime-preview-2024-10-01',
-          voice: 'nova',
+          voice: 'echo',
           temperature: 0.9,
           maxTokens: 4096,
           responseStyle: 'enthusiastic',

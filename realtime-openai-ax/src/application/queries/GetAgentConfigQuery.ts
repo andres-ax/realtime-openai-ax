@@ -253,7 +253,7 @@ export class GetAgentConfigQuery extends BaseQuery {
         isActive: true,
         capabilities: ['payment_processing', 'order_completion', 'receipt_generation'],
         language: 'en-US',
-        voice: 'nova'
+        voice: 'echo'
       }
     };
 
@@ -427,7 +427,7 @@ export class GetAgentConfigQuery extends BaseQuery {
       },
       payment: {
         ...baseConfig,
-        voice: 'nova',
+        voice: 'echo',
         instructions: `You are Karol, a professional and efficient payment agent for a fast-food restaurant.
         Your role is to process payments, collect delivery information, and complete orders.
         

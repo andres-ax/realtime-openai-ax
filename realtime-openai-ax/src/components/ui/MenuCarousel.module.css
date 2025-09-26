@@ -1,0 +1,352 @@
+/* MenuCarousel 3D Styles - Replica exacta del original */
+
+.carouselContainer {
+  position: relative;
+  width: 100%;
+  max-width: 100vw;
+  align-self: stretch;
+  height: 85vh;
+  max-height: 800px;
+  perspective: 1400px;
+  z-index: 1;
+  margin-bottom: 2rem;
+  overflow: visible;
+}
+
+.carouselContainer.loading {
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.carouselContainer.loading .carouselItem {
+  transition: none !important;
+}
+
+.carouselContainer.loading .carouselItem:first-child {
+  transform: translate3d(0px, 0, 300px) scale(1.1) !important;
+  z-index: 2 !important;
+}
+
+.carouselContainer.loading .carouselItem:first-child .itemImage {
+  filter: brightness(1.2) !important;
+}
+
+.carousel {
+  width: 100%;
+  height: 100%;
+  position: absolute;
+  transform-style: preserve-3d;
+}
+
+.carouselItem {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: clamp(280px, 30vw, 380px);
+  height: clamp(360px, 40vw, 480px);
+  margin: calc(-1 * clamp(180px, 20vw, 240px)) 0 0 calc(-1 * clamp(140px, 15vw, 190px));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform, opacity;
+  text-align: center;
+  background: transparent;
+  border-radius: 0;
+  border: none;
+  box-shadow: none;
+}
+
+.itemImage {
+  width: clamp(140%, 15vw, 180%) !important;
+  height: auto !important;
+  max-height: clamp(280px, 30vw, 400px);
+  object-fit: contain;
+  filter: brightness(0.7);
+  transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 0;
+}
+
+.carouselItem.active {
+  z-index: 2;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  transform: scale(1.1);
+}
+
+.carouselItem:not(.active) {
+  z-index: 1;
+  opacity: 0.6;
+}
+
+.carouselItem.active .itemImage {
+  transform: scale(1.2);
+  filter: brightness(1.2);
+}
+
+.carouselItem:not(.active) .itemImage {
+  filter: brightness(0.5);
+}
+
+/* Text Container */
+.itemText {
+  position: absolute;
+  bottom: -70px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0, 0, 0, 0.85);
+  backdrop-filter: blur(10px);
+  padding: 1rem 1.5rem;
+  border-radius: 12px;
+  min-width: 200px;
+  text-align: center;
+  z-index: 10;
+  white-space: nowrap;
+  overflow: visible;
+}
+
+.itemText h3 {
+  margin: 0;
+  font-size: clamp(1.1rem, 2.5vw, 1.5rem);
+  color: #ffffff;
+  font-weight: 600;
+  text-shadow: none;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+}
+
+.price {
+  font-size: clamp(1rem, 2vw, 1.3rem);
+  margin-top: 0.5rem;
+  color: #ff6b35;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-shadow: none;
+}
+
+/* Navigation Controls */
+.controls {
+  position: absolute;
+  bottom: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
+  z-index: 10;
+  justify-content: center;
+}
+
+.navButton {
+  padding: 0.75rem 1.5rem;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  color: #2c3e50;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  min-width: 44px;
+  min-height: 44px;
+}
+
+.navButton:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 1024px) {
+  .carouselContainer {
+    height: 80vh;
+    perspective: 1200px;
+  }
+  
+  .carouselItem {
+    width: clamp(260px, 28vw, 340px);
+    height: clamp(340px, 38vw, 440px);
+  }
+  
+  .itemImage {
+    max-height: clamp(260px, 28vw, 360px) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .carouselContainer {
+    height: 75vh;
+    perspective: 1000px;
+  }
+  
+  .carouselItem {
+    width: clamp(240px, 35vw, 300px);
+    height: clamp(320px, 45vw, 400px);
+  }
+  
+  .itemImage {
+    max-height: clamp(240px, 35vw, 320px) !important;
+  }
+  
+  .itemText {
+    bottom: -50px;
+    padding: 0.75rem 1rem;
+    min-width: 150px;
+  }
+}
+
+@media (max-width: 600px) {
+  .carouselContainer {
+    height: 70vh;
+    perspective: 800px;
+  }
+  
+  .carouselItem {
+    width: clamp(220px, 80vw, 280px);
+    height: clamp(280px, 90vw, 360px);
+  }
+  
+  .itemImage {
+    max-height: clamp(200px, 60vw, 280px) !important;
+  }
+  
+  .itemText {
+    bottom: -40px;
+    padding: 0.5rem 0.75rem;
+    min-width: 120px;
+  }
+  
+  .itemText h3 {
+    font-size: clamp(1rem, 4vw, 1.3rem);
+  }
+  
+  .price {
+    font-size: clamp(0.9rem, 3.5vw, 1.2rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .carouselContainer {
+    height: 65vh;
+    perspective: 600px;
+  }
+  
+  .carouselItem {
+    width: clamp(200px, 85vw, 260px);
+    height: clamp(260px, 95vw, 340px);
+  }
+  
+  .itemImage {
+    max-height: clamp(180px, 65vw, 260px) !important;
+  }
+  
+  .itemText {
+    bottom: -30px;
+    padding: 0.5rem;
+    min-width: 100px;
+  }
+  
+  .itemText h3 {
+    font-size: clamp(0.9rem, 4.5vw, 1.2rem);
+  }
+  
+  .price {
+    font-size: clamp(0.8rem, 4vw, 1.1rem);
+  }
+  
+  .navButton {
+    min-width: 48px;
+    min-height: 48px;
+    padding: 14px 18px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .carouselContainer {
+    height: 60vh;
+    perspective: 500px;
+  }
+  
+  .carouselItem {
+    width: clamp(180px, 90vw, 240px);
+    height: clamp(240px, 100vw, 320px);
+  }
+  
+  .itemImage {
+    max-height: clamp(160px, 70vw, 240px) !important;
+  }
+  
+  .itemText {
+    bottom: -25px;
+    padding: 0.4rem 0.6rem;
+    min-width: 90px;
+  }
+}
+
+/* Landscape orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+  .carouselContainer {
+    height: 85vh;
+    perspective: 700px;
+  }
+  
+  .carouselItem {
+    width: clamp(200px, 25vw, 280px);
+    height: clamp(260px, 35vw, 360px);
+  }
+  
+  .itemImage {
+    max-height: clamp(180px, 25vw, 260px) !important;
+  }
+  
+  .itemText {
+    bottom: -30px;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+/* 🎯 Efectos de focus para cuando AI menciona items */
+.carouselItem.focused {
+  animation: focusGlow 2s ease-in-out;
+}
+
+@keyframes focusGlow {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 53, 0.7);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 0 20px rgba(255, 107, 53, 0.3);
+    transform: scale(1.05);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 107, 53, 0);
+    transform: scale(1);
+  }
+}
+
+/* Indicador de rotación activa */
+.carouselContainer.rotating {
+  pointer-events: none;
+}
+
+.carouselContainer.rotating .carouselItem {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Hardware acceleration */
+.carouselItem {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .carouselItem {
+    transition: none !important;
+  }
+}

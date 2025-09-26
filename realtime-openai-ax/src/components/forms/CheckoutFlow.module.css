@@ -1,0 +1,376 @@
+/* CheckoutFlow Styles - Replica exacta del flujo de checkout original */
+
+.checkoutSection {
+  position: relative;
+  background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+  color: #2c3e50;
+  padding: 4rem 2rem;
+  width: 100%;
+  min-height: 100vh;
+  z-index: 1;
+}
+
+.checkoutContainer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Panel izquierdo: Resumen del carrito */
+.cartSummary {
+  flex: 1 1 300px;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.cartSummary h2 {
+  margin-bottom: 1.5rem;
+  color: #1d1d1f;
+  font-weight: 500;
+  letter-spacing: -0.5px;
+  font-size: 1.8rem;
+}
+
+.cartCount {
+  color: #1d1d1f;
+  margin-bottom: 1.5rem;
+  font-size: 1rem;
+}
+
+.cartItems {
+  margin-bottom: 1.5rem;
+}
+
+.cartItem {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #f0f0f0;
+  padding-bottom: 1rem;
+}
+
+.cartItem:last-child {
+  border-bottom: none;
+  margin-bottom: 0;
+  padding-bottom: 0;
+}
+
+.itemImage {
+  width: 60px !important;
+  height: 60px !important;
+  object-fit: contain;
+  margin-right: 1.5rem;
+  border-radius: 4px;
+}
+
+.itemDetails {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.itemDetails h4 {
+  margin: 0;
+  font-size: 1.1rem;
+  color: #1d1d1f;
+  font-weight: 500;
+}
+
+.itemDetails p {
+  margin: 0.25rem 0 0;
+  font-size: 0.95rem;
+  color: #86868b;
+}
+
+.total {
+  margin-top: 1.5rem;
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  color: #1d1d1f;
+  font-size: 1.3rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e5e7;
+}
+
+.totalAmount {
+  color: #e74c3c;
+}
+
+.proceedButton {
+  width: 100%;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  color: white;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 1.5rem;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: -0.2px;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
+.proceedButton:hover:not(:disabled) {
+  background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(231, 76, 60, 0.4);
+}
+
+.proceedButton:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Panel derecho: Detalles de orden */
+.orderDetails {
+  flex: 1 1 400px;
+  background: #ffffff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.orderDetails h3 {
+  margin-bottom: 1.5rem;
+  color: #e74c3c;
+  font-size: 1.3rem;
+  border-bottom: 2px solid #e74c3c;
+  padding-bottom: 0.5rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+}
+
+/* Grid de detalles */
+.detailsGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  align-items: start;
+}
+
+.mapContainer {
+  width: 100%;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Fieldsets */
+.fieldset {
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin: 0;
+}
+
+.fieldset legend {
+  padding: 0 0.5rem;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1rem;
+}
+
+/* Form groups */
+.formGroup {
+  margin-bottom: 1rem;
+}
+
+.formGroup:last-child {
+  margin-bottom: 0;
+}
+
+.formGroup label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  color: #2c3e50;
+  font-size: 0.9rem;
+}
+
+.formGroup input {
+  width: 100%;
+  padding: 0.75rem;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  background: #fff;
+  color: #2c3e50;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.formGroup input:focus {
+  outline: none;
+  border-color: #e74c3c;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1);
+}
+
+.formGroup input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 3px rgba(220, 53, 69, 0.1);
+}
+
+/* Form row para campos lado a lado */
+.formRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Método de entrega */
+.deliveryMethod {
+  color: #1d1d1f;
+  font-size: 1rem;
+  margin: 0;
+  padding: 0.75rem;
+  background: #f8f9fa;
+  border-radius: 6px;
+  border: 1px solid #e5e5e7;
+}
+
+/* Mensajes de error */
+.fieldError {
+  display: block;
+  color: #dc3545;
+  font-size: 0.8rem;
+  margin-top: 0.25rem;
+}
+
+.errorMessage {
+  background: #f8d7da;
+  color: #721c24;
+  padding: 0.75rem;
+  border-radius: 6px;
+  border: 1px solid #f5c6cb;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+/* Botón volver */
+.backButton {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: #2c3e50;
+  border: 1px solid #dee2e6;
+  padding: 0.75rem 1.5rem;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  z-index: 1000;
+}
+
+.backButton:hover {
+  background: white;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive breakpoints */
+@media (max-width: 768px) {
+  .checkoutSection {
+    padding: 2rem 1rem;
+  }
+  
+  .checkoutContainer {
+    flex-direction: column;
+    gap: 2rem;
+  }
+  
+  .cartSummary,
+  .orderDetails {
+    flex: 1 1 auto;
+    padding: 1.5rem;
+  }
+  
+  .cartSummary h2,
+  .orderDetails h3 {
+    font-size: 1.5rem;
+  }
+  
+  .detailsGrid {
+    gap: 1.5rem;
+  }
+  
+  .backButton {
+    top: 1rem;
+    left: 1rem;
+    padding: 0.5rem 1rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .checkoutSection {
+    padding: 1rem 0.5rem;
+  }
+  
+  .cartSummary,
+  .orderDetails {
+    padding: 1rem;
+  }
+  
+  .cartSummary h2 {
+    font-size: 1.3rem;
+  }
+  
+  .orderDetails h3 {
+    font-size: 1.2rem;
+  }
+  
+  .itemImage {
+    width: 50px !important;
+    height: 50px !important;
+    margin-right: 1rem;
+  }
+  
+  .itemDetails h4 {
+    font-size: 1rem;
+  }
+  
+  .itemDetails p {
+    font-size: 0.85rem;
+  }
+  
+  .total {
+    font-size: 1.1rem;
+  }
+  
+  .fieldset {
+    padding: 1rem;
+  }
+  
+  .formRow {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .backButton {
+    position: static;
+    margin-bottom: 1rem;
+    width: 100%;
+  }
+}
+
+/* Focus-visible para accesibilidad */
+.proceedButton:focus-visible,
+.backButton:focus-visible {
+  outline: 3px solid rgba(231, 76, 60, 0.6);
+  outline-offset: 2px;
+}
+
+.formGroup input:focus-visible {
+  outline: 3px solid rgba(231, 76, 60, 0.6);
+  outline-offset: 2px;
+}

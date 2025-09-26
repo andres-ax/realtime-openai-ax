@@ -40,3 +40,36 @@ a {
     color-scheme: dark;
   }
 }
+
+/* 🎉 Party Mode Styles (basado en proyecto exitoso) */
+.party-mode {
+  animation: partyColors 0.5s infinite alternate;
+}
+
+@keyframes partyColors {
+  0% { filter: hue-rotate(0deg) saturate(1.5); }
+  25% { filter: hue-rotate(90deg) saturate(2); }
+  50% { filter: hue-rotate(180deg) saturate(1.5); }
+  75% { filter: hue-rotate(270deg) saturate(2); }
+  100% { filter: hue-rotate(360deg) saturate(1.5); }
+}
+
+/* 🎯 Focused Menu Item Styles */
+.focused {
+  animation: focusPulse 2s ease-in-out;
+  transform: scale(1.05);
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  border: 2px solid #ffd700;
+  z-index: 10;
+}
+
+@keyframes focusPulse {
+  0%, 100% { 
+    transform: scale(1.05);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8);
+  }
+  50% { 
+    transform: scale(1.1);
+    box-shadow: 0 0 30px rgba(255, 215, 0, 1);
+  }
+}

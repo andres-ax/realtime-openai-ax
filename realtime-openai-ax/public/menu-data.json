@@ -1,0 +1,50 @@
+{
+  "menu_items": [
+    "Big Burger Combo",
+    "Double Cheeseburger", 
+    "Cheeseburger",
+    "Hamburger",
+    "Crispy Chicken Sandwich",
+    "Chicken Nuggets (6 pc)",
+    "Crispy Fish Sandwich", 
+    "Fries",
+    "Baked Apple Pie",
+    "Manzana Postobon® Drink"
+  ],
+  "prices": {
+    "Big Burger Combo": 14.89,
+    "Double Cheeseburger": 5.79,
+    "Cheeseburger": 3.49,
+    "Hamburger": 2.99,
+    "Crispy Chicken Sandwich": 4.99,
+    "Chicken Nuggets (6 pc)": 4.49,
+    "Crispy Fish Sandwich": 5.29,
+    "Fries": 3.19,
+    "Baked Apple Pie": 1.79,
+    "Manzana Postobon® Drink": 1.49
+  },
+  "images": {
+    "Big Burger Combo": "/images/menu/combo-postobon.png",
+    "Double Cheeseburger": "/images/menu/Double_Cheeseburger.png",
+    "Cheeseburger": "/images/menu/Cheeseburger.png", 
+    "Hamburger": "/images/menu/Hamburger.png",
+    "Crispy Chicken Sandwich": "/images/menu/Crispy_Chicken_Sandwich.png",
+    "Chicken Nuggets (6 pc)": "/images/menu/Chicken_Nuggets__6_pc.png",
+    "Crispy Fish Sandwich": "/images/menu/Filet_Fish_Sandwich.png",
+    "Fries": "/images/menu/Fries.png",
+    "Baked Apple Pie": "/images/menu/Apple_Pie.png",
+    "Manzana Postobon® Drink": "/images/menu/manzana-postobon-350-RET-1.png"
+  },
+  "descriptions": {
+    "Big Burger Combo": "Classic burger with fries and medium drink - our signature combo meal",
+    "Double Cheeseburger": "Two beef patties with American cheese, pickles, onions, ketchup and mustard",
+    "Cheeseburger": "Single beef patty with American cheese, pickles, onions, ketchup and mustard", 
+    "Hamburger": "Simple and classic - beef patty with pickles, onions, ketchup and mustard",
+    "Crispy Chicken Sandwich": "Crispy breaded chicken breast with fresh lettuce and creamy mayo",
+    "Chicken Nuggets (6 pc)": "Six pieces of golden crispy chicken nuggets with your choice of dipping sauce",
+    "Crispy Fish Sandwich": "Golden fried fish fillet with tartar sauce and fresh shredded lettuce",
+    "Fries": "Golden crispy french fries - available in small, medium, or large sizes",
+    "Baked Apple Pie": "Warm handheld pie filled with sweet cinnamon apples and flaky crust",
+    "Manzana Postobon® Drink": "Ice-cold, refreshing Colombian apple-flavored soda"
+  }
+}

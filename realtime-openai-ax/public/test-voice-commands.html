@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Voice Commands - AI Focus</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .voice-command {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .expected-result {
+            background: #e3f2fd;
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        .test-button {
+            background: #ff6b35;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .test-button:hover {
+            background: #e55a2b;
+        }
+        .log {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        .status.success { background: #d4edda; color: #155724; }
+        .status.warning { background: #fff3cd; color: #856404; }
+        .status.error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>🎤 Test Voice Commands - AI Focus Integration</h1>
+    
+    <div class="test-panel">
+        <h2>🎯 Objetivo del Test</h2>
+        <p>Verificar que cuando la AI menciona un producto, automáticamente llama <code>focus_menu_item</code> y el carousel rota.</p>
+        
+        <div class="status" id="status">
+            ⏳ Esperando conexión con /voice-ordering...
+        </div>
+    </div>
+
+    <div class="test-panel">
+        <h2>🗣️ Comandos de Voz para Probar</h2>
+        <p>Usa estos comandos cuando hables con la AI:</p>
+        
+        <div class="voice-command">
+            <strong>🍔 "¿Qué tal las hamburguesas?"</strong>
+            <div class="expected-result">
+                <strong>Resultado esperado:</strong> AI llama focus_menu_item("Hamburger") → Carousel rota a hamburguesa
+            </div>
+            <button class="test-button" onclick="simulateVoiceCommand('Hamburger', '¿Qué tal las hamburguesas?')">
+                Simular Comando
+            </button>
+        </div>
+
+        <div class="voice-command">
+            <strong>🍗 "Háblame del pollo"</strong>
+            <div class="expected-result">
+                <strong>Resultado esperado:</strong> AI llama focus_menu_item("Crispy Chicken Sandwich") → Carousel rota a pollo
+            </div>
+            <button class="test-button" onclick="simulateVoiceCommand('Crispy Chicken Sandwich', 'Háblame del pollo')">
+                Simular Comando
+            </button>
+        </div>
+
+        <div class="voice-command">
+            <strong>🍟 "¿Tienen papas fritas?"</strong>
+            <div class="expected-result">
+                <strong>Resultado esperado:</strong> AI llama focus_menu_item("Fries") → Carousel rota a papas
+            </div>
+            <button class="test-button" onclick="simulateVoiceCommand('Fries', '¿Tienen papas fritas?')">
+                Simular Comando
+            </button>
+        </div>
+
+        <div class="voice-command">
+            <strong>🍔 "¿Qué es el Big Burger Combo?"</strong>
+            <div class="expected-result">
+                <strong>Resultado esperado:</strong> AI llama focus_menu_item("Big Burger Combo") → Carousel rota a combo
+            </div>
+            <button class="test-button" onclick="simulateVoiceCommand('Big Burger Combo', '¿Qué es el Big Burger Combo?')">
+                Simular Comando
+            </button>
+        </div>
+
+        <div class="voice-command">
+            <strong>🧀 "Quiero algo con queso"</strong>
+            <div class="expected-result">
+                <strong>Resultado esperado:</strong> AI llama focus_menu_item("Cheeseburger") → Carousel rota a cheeseburger
+            </div>
+            <button class="test-button" onclick="simulateVoiceCommand('Cheeseburger', 'Quiero algo con queso')">
+                Simular Comando
+            </button>
+        </div>
+    </div>
+
+    <div class="test-panel">
+        <h2>🔧 Testing Manual</h2>
+        <p>Selecciona un producto para simular que la AI lo menciona:</p>
+        
+        <select id="productSelect">
+            <option value="Big Burger Combo">Big Burger Combo</option>
+            <option value="Double Cheeseburger">Double Cheeseburger</option>
+            <option value="Cheeseburger">Cheeseburger</option>
+            <option value="Hamburger">Hamburger</option>
+            <option value="Crispy Chicken Sandwich">Crispy Chicken Sandwich</option>
+            <option value="Chicken Nuggets (6 pc)">Chicken Nuggets (6 pc)</option>
+            <option value="Crispy Fish Sandwich">Crispy Fish Sandwich</option>
+            <option value="Fries">Fries</option>
+            <option value="Baked Apple Pie">Baked Apple Pie</option>
+            <option value="Manzana Postobon® Drink">Manzana Postobon® Drink</option>
+        </select>
+        
+        <button class="test-button" onclick="testSelectedProduct()">
+            🎯 Simular AI Focus
+        </button>
+        
+        <button class="test-button" onclick="testAllProducts()">
+            🔄 Test Todos los Productos
+        </button>
+        
+        <button class="test-button" onclick="testDirectFunctionCall()">
+            🧪 Test Direct Function Call
+        </button>
+    </div>
+
+    <div class="test-panel">
+        <h2>📊 Log de Eventos</h2>
+        <div class="log" id="log"></div>
+        <button class="test-button" onclick="clearLog()">Limpiar Log</button>
+    </div>
+
+    <div class="test-panel">
+        <h2>📋 Instrucciones</h2>
+        <ol>
+            <li>Abre <a href="/voice-ordering" target="_blank">/voice-ordering</a> en otra pestaña</li>
+            <li>Conecta el micrófono (botón rojo)</li>
+            <li>Usa los comandos de voz de arriba</li>
+            <li>Verifica que el carousel rote automáticamente</li>
+            <li>Revisa la consola del navegador para logs detallados</li>
+        </ol>
+    </div>
+
+    <script>
+        let logCount = 0;
+
+        function log(message, type = 'info') {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? '#ff6b6b' : type === 'success' ? '#51cf66' : '#00ff00';
+            
+            logEl.innerHTML += `<span style="color: ${color}">[${timestamp}] ${message}</span><br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            logCount++;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            logCount = 0;
+        }
+
+        function updateStatus(message, type = 'warning') {
+            const statusEl = document.getElementById('status');
+            statusEl.textContent = message;
+            statusEl.className = `status ${type}`;
+        }
+
+        function simulateVoiceCommand(product, command) {
+            log(`🎤 Simulando comando de voz: "${command}"`, 'info');
+            log(`🎯 Esperando que AI llame focus_menu_item("${product}")`, 'info');
+            
+            // Simular que la AI llama focus_menu_item
+            setTimeout(() => {
+                simulateAIFunctionCall(product);
+            }, 1000);
+        }
+
+        function simulateAIFunctionCall(product) {
+            log(`🤖 AI simulada llamando focus_menu_item("${product}")`, 'success');
+            
+            // Disparar el evento como lo haría la AI
+            const event = new CustomEvent('focusMenuItem', {
+                detail: { itemName: product }
+            });
+            
+            window.dispatchEvent(event);
+            log(`📡 Evento focusMenuItem disparado para: ${product}`, 'success');
+            
+            // Verificar si hay funciones globales disponibles
+            if (window.testCarouselFocus) {
+                window.testCarouselFocus(product);
+                log(`✅ Función testCarouselFocus ejecutada`, 'success');
+            } else {
+                log(`⚠️ Función testCarouselFocus no disponible (abrir /voice-ordering)`, 'error');
+            }
+        }
+
+        function testSelectedProduct() {
+            const select = document.getElementById('productSelect');
+            const product = select.value;
+            log(`🎯 Testing producto seleccionado: ${product}`, 'info');
+            simulateAIFunctionCall(product);
+        }
+
+        function testAllProducts() {
+            const products = [
+                'Big Burger Combo', 'Double Cheeseburger', 'Cheeseburger', 'Hamburger',
+                'Crispy Chicken Sandwich', 'Chicken Nuggets (6 pc)', 'Crispy Fish Sandwich',
+                'Fries', 'Baked Apple Pie', 'Manzana Postobon® Drink'
+            ];
+            
+            log(`🔄 Iniciando test de todos los productos (${products.length})`, 'info');
+            
+            products.forEach((product, index) => {
+                setTimeout(() => {
+                    log(`🎯 [${index + 1}/${products.length}] Testing: ${product}`, 'info');
+                    simulateAIFunctionCall(product);
+                }, index * 2000); // 2 segundos entre cada test
+            });
+        }
+
+        // Escuchar eventos de focus
+        window.addEventListener('focusMenuItem', (event) => {
+            log(`📨 Evento focusMenuItem recibido: ${event.detail.itemName}`, 'success');
+        });
+
+        // Verificar conexión con /voice-ordering
+        function checkConnection() {
+            if (window.testCarouselFocus || window.rotateCarouselTo) {
+                updateStatus('✅ Conectado con /voice-ordering - Funciones disponibles', 'success');
+            } else {
+                updateStatus('⚠️ No conectado - Abre /voice-ordering en otra pestaña', 'warning');
+            }
+        }
+
+        // Test directo de function call
+        function testDirectFunctionCall() {
+            log('🧪 Testing direct function call execution...', 'info');
+            
+            // Simular el mensaje que debería llegar de OpenAI
+            const mockMessage = {
+                type: 'response.output_item.done',
+                event_id: 'test_event_123',
+                response_id: 'test_response_123',
+                output_index: 0,
+                item: {
+                    id: 'test_item_123',
+                    type: 'function_call',
+                    name: 'focus_menu_item',
+                    arguments: '{"menu_item": "Hamburger"}',
+                    call_id: 'test_call_123'
+                }
+            };
+            
+            log('📨 Simulating OpenAI message:', 'info');
+            log(JSON.stringify(mockMessage, null, 2), 'info');
+            
+            // Verificar si hay funciones disponibles para procesar
+            if (window.processFunctionCall) {
+                log('✅ processFunctionCall function found, calling...', 'success');
+                window.processFunctionCall(mockMessage).then(result => {
+                    log('🎉 Function call result: ' + JSON.stringify(result), 'success');
+                }).catch(error => {
+                    log('❌ Function call error: ' + error.message, 'error');
+                });
+            } else {
+                log('❌ processFunctionCall function not found', 'error');
+            }
+        }
+
+        // Verificar conexión cada 2 segundos
+        setInterval(checkConnection, 2000);
+
+        // Log inicial
+        window.addEventListener('load', () => {
+            log('🚀 Test page cargada - Lista para probar comandos de voz', 'success');
+            checkConnection();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,311 @@
+/* VoiceInterface Styles - Replica exacta del botón de micrófono original */
+
+.micButton {
+  position: fixed;
+  bottom: clamp(20px, 5vh, 40px);
+  right: clamp(20px, 5vw, 40px);
+  width: clamp(90px, 13.5vw, 108px);
+  height: clamp(90px, 13.5vw, 108px);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1000;
+  padding: 0;
+  overflow: hidden;
+  min-width: 44px;
+  min-height: 44px;
+  /* Hardware acceleration */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: transform, opacity;
+}
+
+.micButton:hover {
+  transform: scale(1.1) translateY(-8px);
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+}
+
+.micButton:active {
+  transform: scale(0.95);
+  transition: all 0.1s ease;
+}
+
+/* Estados del botón */
+.micButton.active {
+  animation: micPulse 1.5s infinite;
+  background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
+  transform: scale(1.05);
+}
+
+.micButton.connecting {
+  animation: micConnecting 1s infinite;
+}
+
+.micButton.error {
+  background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+  animation: micError 0.5s ease-in-out;
+}
+
+/* Iconos */
+.micIcon,
+.pauseIcon {
+  width: clamp(30px, 4.5vw, 42px);
+  height: clamp(30px, 4.5vw, 42px);
+  fill: white;
+  display: block;
+  transition: all 0.3s ease;
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Animaciones de estado activo */
+.micButton.active::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(231, 76, 60, 0.6);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: micWave 2s infinite;
+  pointer-events: none;
+}
+
+.micButton.active::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 100%;
+  height: 100%;
+  border: 2px solid rgba(231, 76, 60, 0.4);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: micWave 2s infinite 0.5s;
+  pointer-events: none;
+}
+
+/* Animación de pulso cuando activo */
+@keyframes micPulse {
+  0% { 
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(231, 76, 60, 0.7);
+  }
+  50% { 
+    transform: scale(1.1);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 0 10px rgba(231, 76, 60, 0);
+  }
+  100% { 
+    transform: scale(1.05);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3), 0 0 0 0 rgba(231, 76, 60, 0);
+  }
+}
+
+/* Animación de ondas */
+@keyframes micWave {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Animación de conexión */
+@keyframes micConnecting {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* Animación de error */
+@keyframes micError {
+  0%, 100% { transform: scale(1.05); }
+  25% { transform: scale(1.1) rotate(-5deg); }
+  75% { transform: scale(1.1) rotate(5deg); }
+}
+
+/* Anillo de escucha cuando activo */
+.micButton.active::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 140%;
+  height: 140%;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(231, 76, 60, 0.7);
+  border-radius: 50%;
+  animation: ringPulse 1.5s infinite ease-out;
+  pointer-events: none;
+}
+
+/* Onda inactiva (antes del clic) */
+.micButton:not(.active)::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 120%;
+  height: 120%;
+  transform: translate(-50%, -50%);
+  border: 3px solid rgba(231, 76, 60, 0.45);
+  border-radius: 50%;
+  animation: ringPulse 2.4s infinite ease-out;
+  pointer-events: none;
+}
+
+@keyframes ringPulse {
+  0% {
+    transform: translate(-50%, -50%) scale(0.8);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.8);
+    opacity: 0;
+  }
+}
+
+/* Status Container */
+.statusContainer {
+  position: fixed;
+  bottom: 24px;
+  left: 24px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 1000;
+}
+
+.status {
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  padding: 0.5rem 1rem;
+  border-radius: 16px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(10px);
+}
+
+.activity {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #888;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+.activity.active {
+  background: #2ecc71;
+  box-shadow: 0 0 12px rgba(46, 204, 113, 0.5);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .micButton {
+    bottom: clamp(15px, 4vh, 30px);
+    right: clamp(15px, 4vw, 30px);
+  }
+  
+  .statusContainer {
+    bottom: 20px;
+    left: 20px;
+  }
+  
+  .status {
+    font-size: 0.8rem;
+    padding: 0.4rem 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .micButton {
+    bottom: clamp(12px, 3vh, 25px);
+    right: clamp(12px, 3vw, 25px);
+  }
+  
+  .statusContainer {
+    bottom: 16px;
+    left: 16px;
+  }
+  
+  .status {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.7rem;
+  }
+  
+  .activity {
+    width: 12px;
+    height: 12px;
+  }
+}
+
+@media (max-width: 360px) {
+  .micButton {
+    bottom: clamp(10px, 2.5vh, 20px);
+    right: clamp(10px, 2.5vw, 20px);
+  }
+  
+  .micButton:not(.active)::after { 
+    width: 110%; 
+    height: 110%; 
+  }
+  
+  .micButton.active::before { 
+    width: 120%; 
+    height: 120%; 
+  }
+  
+  .statusContainer {
+    bottom: 12px;
+    left: 12px;
+  }
+}
+
+/* Landscape orientation */
+@media (max-height: 500px) and (orientation: landscape) {
+  .micButton { 
+    bottom: clamp(8px, 2vh, 15px); 
+    right: clamp(8px, 2vw, 15px); 
+  }
+  
+  .statusContainer {
+    bottom: 8px;
+    left: 8px;
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .micButton {
+    animation: none !important;
+  }
+  
+  .micButton::before,
+  .micButton::after {
+    animation: none !important;
+  }
+  
+  .micIcon,
+  .pauseIcon {
+    transition: none !important;
+  }
+}

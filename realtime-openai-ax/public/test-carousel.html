@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Carousel Focus</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f0f0f0;
+        }
+        .test-panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .test-button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .test-button:hover {
+            background: #0056cc;
+        }
+        .log {
+            background: #f8f8f8;
+            padding: 10px;
+            border-radius: 5px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Test Carousel Focus Functionality</h1>
+    
+    <div class="test-panel">
+        <h2>Manual Testing</h2>
+        <p>Use these buttons to test carousel rotation:</p>
+        
+        <button class="test-button" onclick="testFocus('Big Burger Combo')">Focus: Big Burger Combo</button>
+        <button class="test-button" onclick="testFocus('Double Cheeseburger')">Focus: Double Cheeseburger</button>
+        <button class="test-button" onclick="testFocus('Cheeseburger')">Focus: Cheeseburger</button>
+        <button class="test-button" onclick="testFocus('Hamburger')">Focus: Hamburger</button>
+        <button class="test-button" onclick="testFocus('Crispy Chicken Sandwich')">Focus: Crispy Chicken Sandwich</button>
+        <br>
+        <button class="test-button" onclick="testFocus('Chicken Nuggets (6 pc)')">Focus: Chicken Nuggets (6 pc)</button>
+        <button class="test-button" onclick="testFocus('Crispy Fish Sandwich')">Focus: Crispy Fish Sandwich</button>
+        <button class="test-button" onclick="testFocus('Fries')">Focus: Fries</button>
+        <button class="test-button" onclick="testFocus('Baked Apple Pie')">Focus: Baked Apple Pie</button>
+        <button class="test-button" onclick="testFocus('Manzana Postobon® Drink')">Focus: Manzana Postobon® Drink</button>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <div class="test-panel">
+        <h2>Console Commands</h2>
+        <p>Open browser console and try these commands:</p>
+        <code>
+            // Test carousel rotation<br>
+            window.testCarouselFocus('Hamburger')<br><br>
+            
+            // Direct rotation<br>
+            window.rotateCarouselTo('Crispy Chicken Sandwich')<br><br>
+            
+            // Test tool calling event<br>
+            window.dispatchEvent(new CustomEvent('focusMenuItem', { detail: { itemName: 'Fries' } }))
+        </code>
+    </div>
+
+    <div class="test-panel">
+        <h2>Instructions</h2>
+        <ol>
+            <li>Go to <a href="/voice-ordering" target="_blank">/voice-ordering</a> page</li>
+            <li>Open browser console (F12)</li>
+            <li>Use the buttons above or console commands to test carousel rotation</li>
+            <li>Verify that the carousel rotates step-by-step to the selected item</li>
+            <li>Check that focus effects are applied</li>
+        </ol>
+    </div>
+
+    <script>
+        function log(message) {
+            const logEl = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logEl.innerHTML += `[${timestamp}] ${message}<br>`;
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function testFocus(itemName) {
+            log(`Testing focus on: ${itemName}`);
+            
+            // Try to call the global function if available
+            if (window.testCarouselFocus) {
+                window.testCarouselFocus(itemName);
+                log(`✅ Called window.testCarouselFocus('${itemName}')`);
+            } else if (window.rotateCarouselTo) {
+                window.rotateCarouselTo(itemName);
+                log(`✅ Called window.rotateCarouselTo('${itemName}')`);
+            } else {
+                // Dispatch event directly
+                const event = new CustomEvent('focusMenuItem', {
+                    detail: { itemName }
+                });
+                window.dispatchEvent(event);
+                log(`✅ Dispatched focusMenuItem event for '${itemName}'`);
+            }
+        }
+
+        // Log when page loads
+        window.addEventListener('load', () => {
+            log('Test page loaded. Open /voice-ordering in another tab to test.');
+        });
+
+        // Listen for focus events
+        window.addEventListener('focusMenuItem', (event) => {
+            log(`🎯 Received focusMenuItem event: ${event.detail.itemName}`);
+        });
+    </script>
+</body>
+</html>
