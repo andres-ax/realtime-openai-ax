@@ -240,7 +240,7 @@ export class AgentConfigAdapter {
       agentId: agentId?.toString(),
       customerId: customerId?.toString(),
       tools: tools,
-      capabilities: this.buildCapabilities(agentType, tools),
+      capabilities: this.buildCapabilities(agentType),
       personality: this.buildPersonality(agentType),
       constraints: this.buildConstraints(agentType),
       createdAt: new Date(),
@@ -255,9 +255,9 @@ export class AgentConfigAdapter {
    */
   private getBaseConfiguration(agentType: AgentType): BaseAgentConfig {
     switch (agentType.getValue()) {
-      case 'SALES':
+      case 'sales':
         return {
-          agentType: 'SALES',
+          agentType: 'sales',
           name: 'Luxora',
           description: 'Friendly sales assistant specialized in menu recommendations',
           model: 'gpt-4o-realtime-preview-2024-10-01',
@@ -270,9 +270,9 @@ export class AgentConfigAdapter {
           communicationStyle: 'friendly_persuasive'
         };
 
-      case 'PAYMENT':
+      case 'payment':
         return {
-          agentType: 'PAYMENT',
+          agentType: 'payment',
           name: 'Karol',
           description: 'Professional payment specialist for secure transactions',
           model: 'gpt-4o-realtime-preview-2024-10-01',
@@ -287,7 +287,7 @@ export class AgentConfigAdapter {
 
       default:
         return {
-          agentType: 'GENERAL',
+          agentType: 'support',
           name: 'Assistant',
           description: 'General purpose assistant',
           model: 'gpt-4o-realtime-preview-2024-10-01',
@@ -306,7 +306,7 @@ export class AgentConfigAdapter {
    * 🛠️ PATRÓN: Capabilities Builder Pattern
    * Construir capacidades específicas del agente
    */
-  private buildCapabilities(agentType: AgentType, tools: AgentTool[]): AgentCapabilities {
+  private buildCapabilities(agentType: AgentType): AgentCapabilities {
     const baseCapabilities: AgentCapabilities = {
       canProcessVoice: true,
       canGenerateText: true,
@@ -319,7 +319,7 @@ export class AgentConfigAdapter {
     };
 
     switch (agentType.getValue()) {
-      case 'SALES':
+      case 'sales':
         return {
           ...baseCapabilities,
           canControlUI: true,
@@ -332,7 +332,7 @@ export class AgentConfigAdapter {
           responseTimeTarget: 1500
         };
 
-      case 'PAYMENT':
+      case 'payment':
         return {
           ...baseCapabilities,
           canProcessPayments: true,
@@ -357,7 +357,7 @@ export class AgentConfigAdapter {
    */
   private buildPersonality(agentType: AgentType): AgentPersonality {
     switch (agentType.getValue()) {
-      case 'SALES':
+      case 'sales':
         return {
           traits: ['enthusiastic', 'helpful', 'persuasive', 'knowledgeable'],
           communicationStyle: 'friendly_energetic',
@@ -373,7 +373,7 @@ export class AgentConfigAdapter {
           assertivenessLevel: 'medium_high'
         };
 
-      case 'PAYMENT':
+      case 'payment':
         return {
           traits: ['professional', 'trustworthy', 'detail_oriented', 'security_conscious'],
           communicationStyle: 'professional_reassuring',
@@ -420,7 +420,7 @@ export class AgentConfigAdapter {
     };
 
     switch (agentType.getValue()) {
-      case 'SALES':
+      case 'sales':
         return {
           ...baseConstraints,
           maxResponseLength: 300,
@@ -432,7 +432,7 @@ export class AgentConfigAdapter {
           confidenceRequirement: 0.7
         };
 
-      case 'PAYMENT':
+      case 'payment':
         return {
           ...baseConstraints,
           maxResponseLength: 200,
@@ -532,7 +532,7 @@ export class AgentConfigAdapter {
    */
   private registerAgentTools(): void {
     // Sales Agent Tools
-    this.toolsRegistry.set('SALES', [
+    this.toolsRegistry.set('sales', [
       {
         name: 'focus_menu_item',
         description: 'Focus on a specific menu item in the 3D carousel',
@@ -563,7 +563,7 @@ export class AgentConfigAdapter {
     ]);
 
     // Payment Agent Tools
-    this.toolsRegistry.set('PAYMENT', [
+    this.toolsRegistry.set('payment', [
       {
         name: 'update_order_data',
         description: 'Update customer and delivery information',
@@ -590,7 +590,7 @@ export class AgentConfigAdapter {
    * Generar clave de cache
    */
   private buildCacheKey(agentType: AgentType, agentId?: AgentId, customerId?: CustomerId): string {
-    const parts = [agentType.getValue()];
+    const parts = [agentType.toString()];
     
     if (agentId) parts.push(agentId.toString());
     if (customerId) parts.push(customerId.toString());

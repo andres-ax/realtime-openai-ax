@@ -145,14 +145,15 @@ export class UpdateOrderCommand extends BaseCommand {
     const payload = data.payload as {
       orderId: string;
       customerId?: string;
-      updateType: string;
+      updateType: OrderUpdateType;
       updateData: Record<string, unknown>;
       sessionId?: string;
       reason?: string;
+      agentId?: string;
     };
     return new UpdateOrderCommand(
       payload.orderId,
-      payload.customerId,
+      payload.customerId || '',
       payload.updateType,
       payload.updateData,
       payload.reason,

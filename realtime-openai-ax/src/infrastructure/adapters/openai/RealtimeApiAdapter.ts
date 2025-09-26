@@ -18,7 +18,7 @@ export class RealtimeApiAdapter {
   private dataChannel: RTCDataChannel | null = null;
   private audioContext: AudioContext | null = null;
   private currentSession: RealtimeSession | null = null;
-  private eventListeners: Map<string, Function[]> = new Map();
+  private eventListeners: Map<string, ((data: unknown) => void)[]> = new Map();
 
   /**
    * 🔧 PATRÓN: Singleton Pattern
@@ -197,7 +197,7 @@ export class RealtimeApiAdapter {
    * 🔄 PATRÓN: Event Listener Pattern
    * Registrar listener para eventos de OpenAI
    */
-  public addEventListener(eventType: string, listener: Function): void {
+  public addEventListener(eventType: string, listener: (data: unknown) => void): void {
     if (!this.eventListeners.has(eventType)) {
       this.eventListeners.set(eventType, []);
     }
@@ -306,7 +306,7 @@ export class RealtimeApiAdapter {
     };
 
     switch (agentType.getValue()) {
-      case 'SALES':
+      case 'sales':
         return {
           ...baseConfig,
           instructions: this.getSalesAgentInstructions(),
@@ -315,7 +315,7 @@ export class RealtimeApiAdapter {
           temperature: 0.9 // Más creatividad para recomendaciones
         };
 
-      case 'PAYMENT':
+      case 'payment':
         return {
           ...baseConfig,
           instructions: this.getPaymentAgentInstructions(customerId),

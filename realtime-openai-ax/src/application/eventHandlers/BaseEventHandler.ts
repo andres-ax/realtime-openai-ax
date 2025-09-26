@@ -138,10 +138,10 @@ export abstract class BaseEventHandler<T extends DomainEvent> {
     if (!event.eventId) errors.push('Event ID is required');
     if (!event.eventType) errors.push('Event type is required');
     if (!event.aggregateId) errors.push('Aggregate ID is required');
-    if (!event.occurredAt) errors.push('Occurred at timestamp is required');
+    if (!event.occurredOn) errors.push('Occurred on timestamp is required');
 
     // Validar que el evento no sea muy antiguo (más de 1 hora)
-    const eventAge = Date.now() - new Date(event.occurredAt).getTime();
+    const eventAge = Date.now() - new Date(event.occurredOn).getTime();
     if (eventAge > 3600000) { // 1 hora
       errors.push('Event is too old to process');
     }

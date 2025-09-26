@@ -43,9 +43,9 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
       this.log('info', 'Processing CartUpdatedEvent', {
         eventId: event.eventId,
         cartId: event.aggregateId,
-        updateType: event.updateType,
+        changeType: event.getChangeType(),
         itemCount: event.itemCount,
-        totalAmount: event.totalAmount
+        totalAmount: event.total.getValue()
       });
 
       const sideEffects: SideEffect[] = [];
@@ -135,12 +135,12 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
         type: 'STORAGE_UPDATE',
         description: `Cart ${event.aggregateId} updated in storage`,
         success: true,
-        data: {
-          cartId: event.aggregateId,
-          updateType: event.updateType,
-          itemCount: event.itemCount,
-          totalAmount: event.totalAmount
-        }
+          data: {
+            cartId: event.aggregateId,
+            updateType: event.getChangeType(),
+            itemCount: event.itemCount,
+            totalAmount: event.total.getValue()
+          }
       };
 
     } catch (error) {
@@ -160,15 +160,15 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
   private createCartDataFromEvent(event: CartUpdatedEvent): Record<string, unknown> {
     return {
       id: event.aggregateId,
-      customerId: event.customerId,
-      sessionId: event.sessionId,
+      customerId: event.payload.customerId as string,
+      sessionId: event.payload.sessionId as string,
       items: event.items || [],
       itemCount: event.itemCount || 0,
-      totalAmount: event.totalAmount || 0,
+      totalAmount: event.total.getValue() || 0,
       isActive: true,
-      createdAt: event.occurredAt,
-      updatedAt: event.occurredAt,
-      lastUpdateType: event.updateType
+      createdAt: event.occurredOn,
+      updatedAt: event.occurredOn,
+      lastUpdateType: event.getChangeType()
     };
   }
 
@@ -178,47 +178,39 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
    */
   private applyUpdateToCartData(cartData: Record<string, unknown>, event: CartUpdatedEvent): Record<string, unknown> {
     const updatedData = { ...cartData };
-    updatedData.updatedAt = event.occurredAt;
-    updatedData.lastUpdateType = event.updateType;
+    updatedData.updatedAt = event.occurredOn;
+    updatedData.lastUpdateType = event.getChangeType();
 
-    switch (event.updateType) {
+    switch (event.getChangeType()) {
       case 'ITEM_ADDED':
         updatedData.items = event.items || updatedData.items;
         updatedData.itemCount = event.itemCount || updatedData.itemCount;
-        updatedData.totalAmount = event.totalAmount || updatedData.totalAmount;
+        updatedData.totalAmount = event.total.getValue() || updatedData.totalAmount;
         break;
 
       case 'ITEM_REMOVED':
         updatedData.items = event.items || updatedData.items;
         updatedData.itemCount = event.itemCount || updatedData.itemCount;
-        updatedData.totalAmount = event.totalAmount || updatedData.totalAmount;
+        updatedData.totalAmount = event.total.getValue() || updatedData.totalAmount;
         break;
 
-      case 'ITEM_QUANTITY_CHANGED':
+      case 'ITEM_UPDATED':
         updatedData.items = event.items || updatedData.items;
         updatedData.itemCount = event.itemCount || updatedData.itemCount;
-        updatedData.totalAmount = event.totalAmount || updatedData.totalAmount;
+        updatedData.totalAmount = event.total.getValue() || updatedData.totalAmount;
         break;
 
-      case 'CART_CLEARED':
+      case 'CLEARED':
         updatedData.items = [];
         updatedData.itemCount = 0;
         updatedData.totalAmount = 0;
-        break;
-
-      case 'CART_ACTIVATED':
-        updatedData.isActive = true;
-        break;
-
-      case 'CART_DEACTIVATED':
-        updatedData.isActive = false;
         break;
 
       default:
         // Actualización genérica
         if (event.items !== undefined) updatedData.items = event.items;
         if (event.itemCount !== undefined) updatedData.itemCount = event.itemCount;
-        if (event.totalAmount !== undefined) updatedData.totalAmount = event.totalAmount;
+        if (event.total !== undefined) updatedData.totalAmount = event.total.getValue();
     }
 
     return updatedData;
@@ -230,7 +222,8 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
    */
   private async syncWithActiveSession(event: CartUpdatedEvent): Promise<SideEffect> {
     try {
-      if (!event.sessionId) {
+      const sessionId = event.payload.sessionId as string;
+      if (!sessionId) {
         return {
           type: 'STORAGE_UPDATE',
           description: 'No session ID provided, skipping session sync',
@@ -238,25 +231,25 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
         };
       }
 
-      const sessionCartKey = this.getStorageKey('session-cart', event.sessionId);
+      const sessionCartKey = this.getStorageKey('session-cart', sessionId);
       this.setBrowserStorage(sessionCartKey, event.aggregateId);
 
       // Actualizar información de sesión
-      const sessionKey = this.getStorageKey('session', event.sessionId);
+      const sessionKey = this.getStorageKey('session', sessionId);
         const sessionData = this.getBrowserStorage(sessionKey) as Record<string, unknown> || {};
       
       sessionData.cartId = event.aggregateId;
       sessionData.cartItemCount = event.itemCount;
-      sessionData.cartTotalAmount = event.totalAmount;
-      sessionData.lastCartUpdate = event.occurredAt;
+      sessionData.cartTotalAmount = event.total.getValue();
+      sessionData.lastCartUpdate = event.occurredOn;
 
       this.setBrowserStorage(sessionKey, sessionData);
 
       return {
         type: 'STORAGE_UPDATE',
-        description: `Cart synchronized with session ${event.sessionId}`,
+        description: `Cart synchronized with session ${sessionId}`,
         success: true,
-        data: { sessionId: event.sessionId, cartId: event.aggregateId }
+        data: { sessionId: sessionId, cartId: event.aggregateId }
       };
 
     } catch (error) {
@@ -278,12 +271,12 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
       const uiEventData = {
         type: 'CART_UPDATED',
         cartId: event.aggregateId,
-        updateType: event.updateType,
+        updateType: event.getChangeType(),
         itemCount: event.itemCount,
-        totalAmount: event.totalAmount,
+        totalAmount: event.total.getValue(),
         items: event.items,
-        timestamp: event.occurredAt,
-        sessionId: event.sessionId
+        timestamp: event.occurredOn,
+        sessionId: event.payload.sessionId as string
       };
 
       this.emitBrowserEvent('realtime-cart-update', uiEventData);
@@ -310,14 +303,14 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
    * Procesamiento específico según el tipo de actualización
    */
   private async processSpecificUpdate(event: CartUpdatedEvent): Promise<SideEffect | null> {
-    switch (event.updateType) {
+    switch (event.getChangeType()) {
       case 'ITEM_ADDED':
         return this.processItemAdded(event);
       
       case 'ITEM_REMOVED':
         return this.processItemRemoved(event);
       
-      case 'CART_CLEARED':
+      case 'CLEARED':
         return this.processCartCleared(event);
       
       default:
@@ -332,24 +325,25 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
   private processItemAdded(event: CartUpdatedEvent): SideEffect {
     try {
       // Emitir evento específico de item agregado
+      const addedItem = event.items[event.items.length - 1] || null;
       this.emitBrowserEvent('realtime-item-added-to-cart', {
         cartId: event.aggregateId,
-        addedItem: event.addedItem,
+        addedItem: addedItem,
         newItemCount: event.itemCount,
-        newTotalAmount: event.totalAmount,
-        timestamp: event.occurredAt
+        newTotalAmount: event.total.getValue(),
+        timestamp: event.occurredOn
       });
 
       // Actualizar popularidad del item
-      if (event.addedItem?.menuItemName) {
-        this.updateItemPopularity(event.addedItem.menuItemName, 1);
+      if (addedItem?.menuItemName) {
+        this.updateItemPopularity(addedItem.menuItemName, 1);
       }
 
       return {
         type: 'BROWSER_EVENT',
-        description: `Item added to cart: ${event.addedItem?.menuItemName}`,
+        description: `Item added to cart: ${addedItem?.menuItemName || 'Unknown'}`,
         success: true,
-        data: { addedItem: event.addedItem }
+        data: { addedItem: addedItem }
       };
 
     } catch (error) {
@@ -369,19 +363,20 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
   private processItemRemoved(event: CartUpdatedEvent): SideEffect {
     try {
       // Emitir evento específico de item removido
+      const removedItem = event.payload.removedItem as Record<string, unknown> || null;
       this.emitBrowserEvent('realtime-item-removed-from-cart', {
         cartId: event.aggregateId,
-        removedItem: event.removedItem,
+        removedItem: removedItem,
         newItemCount: event.itemCount,
-        newTotalAmount: event.totalAmount,
-        timestamp: event.occurredAt
+        newTotalAmount: event.total.getValue(),
+        timestamp: event.occurredOn
       });
 
       return {
         type: 'BROWSER_EVENT',
-        description: `Item removed from cart: ${event.removedItem?.menuItemName}`,
+        description: `Item removed from cart: ${(removedItem as any)?.menuItemName || 'Unknown'}`,
         success: true,
-        data: { removedItem: event.removedItem }
+        data: { removedItem: removedItem }
       };
 
     } catch (error) {
@@ -403,8 +398,8 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
       // Emitir evento específico de carrito limpiado
       this.emitBrowserEvent('realtime-cart-cleared', {
         cartId: event.aggregateId,
-        previousItemCount: event.previousItemCount || 0,
-        timestamp: event.occurredAt
+        previousItemCount: event.payload.previousItemCount as number || 0,
+        timestamp: event.occurredOn
       });
 
       return {
@@ -436,7 +431,7 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
       this.setBrowserStorage(recommendationsKey, {
         cartId: event.aggregateId,
         recommendations,
-        generatedAt: event.occurredAt,
+        generatedAt: event.occurredOn,
         basedOnItems: event.items?.map(item => item.menuItemName) || []
       });
 
@@ -444,7 +439,7 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
       this.emitBrowserEvent('realtime-recommendations-updated', {
         cartId: event.aggregateId,
         recommendations,
-        timestamp: event.occurredAt
+        timestamp: event.occurredOn
       });
 
       return {
@@ -532,16 +527,17 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
         lastUpdate: null
       };
 
-      metrics.totalUpdates++;
-      metrics.updatesByType[event.updateType] = (metrics.updatesByType[event.updateType] || 0) + 1;
-      metrics.lastUpdate = event.occurredAt;
+      (metrics.totalUpdates as number)++;
+      const updateType = event.getChangeType();
+      (metrics.updatesByType as Record<string, number>)[updateType] = ((metrics.updatesByType as Record<string, number>)[updateType] || 0) + 1;
+      metrics.lastUpdate = event.occurredOn;
 
       // Actualizar promedios (simplificado)
       if (event.itemCount !== undefined) {
-        metrics.averageItemCount = (metrics.averageItemCount + event.itemCount) / 2;
+        metrics.averageItemCount = ((metrics.averageItemCount as number) + event.itemCount) / 2;
       }
-      if (event.totalAmount !== undefined) {
-        metrics.averageTotalAmount = (metrics.averageTotalAmount + event.totalAmount) / 2;
+      if (event.total !== undefined) {
+        metrics.averageTotalAmount = ((metrics.averageTotalAmount as number) + event.total.getValue()) / 2;
       }
 
       this.setBrowserStorage(metricsKey, metrics);
@@ -577,12 +573,13 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
       }
 
       // Verificar monto mínimo para delivery
-      if (event.totalAmount && event.totalAmount < 10) {
+      const totalAmount = event.total.getValue();
+      if (totalAmount && totalAmount < 10) {
         violations.push('Minimum order amount for delivery is $10');
       }
 
       // Verificar monto máximo
-      if (event.totalAmount && event.totalAmount > 500) {
+      if (totalAmount && totalAmount > 500) {
         violations.push('Order amount exceeds maximum limit ($500)');
       }
 
@@ -594,7 +591,7 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
       this.emitBrowserEvent('realtime-business-rules-violation', {
         cartId: event.aggregateId,
         violations,
-        timestamp: event.occurredAt
+        timestamp: event.occurredOn
       });
 
       return {
@@ -621,13 +618,13 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
   private async updateCartIndices(event: CartUpdatedEvent, cartData: Record<string, unknown>): Promise<void> {
     // Actualizar índice por customer si existe
     if (cartData.customerId) {
-      const customerCartKey = this.getStorageKey('customer-cart', cartData.customerId);
+      const customerCartKey = this.getStorageKey('customer-cart', cartData.customerId as string);
       this.setBrowserStorage(customerCartKey, event.aggregateId);
     }
 
     // Actualizar índice por sesión si existe
     if (cartData.sessionId) {
-      const sessionCartKey = this.getStorageKey('session-cart', cartData.sessionId);
+      const sessionCartKey = this.getStorageKey('session-cart', cartData.sessionId as string);
       this.setBrowserStorage(sessionCartKey, event.aggregateId);
     }
   }
@@ -639,7 +636,7 @@ export class CartUpdatedEventHandler extends BaseEventHandler<CartUpdatedEvent> 
   private updateItemPopularity(itemName: string, increment: number): void {
     try {
       const popularityKey = this.getStorageKey('item-popularity');
-      const popularity = this.getBrowserStorage(popularityKey) as Record<string, unknown> || {};
+      const popularity = this.getBrowserStorage(popularityKey) as Record<string, number> || {};
       
       popularity[itemName] = (popularity[itemName] || 0) + increment;
       

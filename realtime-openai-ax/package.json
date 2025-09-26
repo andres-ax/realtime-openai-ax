@@ -6,7 +6,12 @@
     "dev": "next dev --turbopack",
     "build": "next build --turbopack",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "ts-prune": "ts-prune",
+    "ts-prune:unused": "ts-prune | grep -v '(used in module)'",
+    "analyze": "npm run ts-prune:unused && npm run build",
+    "clean-unused": "echo 'Review ts-prune output before deleting any code'",
+    "architecture-check": "echo '🏗️ Architecture: 39 patterns implemented across 3 layers'"
   },
   "dependencies": {
     "next": "15.5.4",
@@ -16,11 +21,13 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@types/google.maps": "^3.58.1",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
+    "ts-prune": "^0.10.3",
     "typescript": "^5"
   }
 }

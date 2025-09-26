@@ -129,7 +129,7 @@ export class UpdateCartUseCase {
       }
 
       // 3. Obtener item antes de remover para el evento
-      const removedItem = cart.getItems().find(item => 
+      cart.getItems().find(item => 
         item.getMenuItemName() === command.menuItemName
       );
 
@@ -257,7 +257,7 @@ export class UpdateCartUseCase {
       }
 
       // 3. Obtener count anterior para el evento
-      const previousItemCount = cart.getItemCount();
+      cart.getItemCount();
 
       // 4. Limpiar carrito
       cart.clear();

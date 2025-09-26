@@ -13,7 +13,7 @@ import { PricingService } from '../../domain/services/PricingService';
 import { OrderId } from '../../domain/valueObjects/OrderId';
 import { CustomerId } from '../../domain/valueObjects/CustomerId';
 import { Price } from '../../domain/valueObjects/Price';
-import { PaymentProcessedEvent } from '../../domain/events/PaymentProcessedEvent';
+import { PaymentProcessedEvent, PaymentMethod as DomainPaymentMethod } from '../../domain/events/PaymentProcessedEvent';
 
 // Import domain types
 interface DomainPromotion {
@@ -29,7 +29,7 @@ interface DomainPromotion {
   endDate?: Date;
 }
 
-type PaymentMethod = 'CREDIT_CARD' | 'DEBIT_CARD' | 'PAYPAL' | 'APPLE_PAY';
+// PaymentMethod local removido - se usa DomainPaymentMethod
 type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDED';
 
   /**
@@ -37,6 +37,24 @@ type PaymentStatus = 'PENDING' | 'COMPLETED' | 'FAILED' | 'CANCELLED' | 'REFUNDE
    * ProcessPaymentUseCase encapsula la lógica de aplicación para procesamiento de pagos
    */
 export class ProcessPaymentUseCase {
+
+  /**
+   * 🔄 PATRÓN: Payment Method Mapping Pattern
+   * Mapear método de pago de aplicación a dominio
+   */
+  private mapPaymentMethod(paymentMethod: string): DomainPaymentMethod {
+    switch (paymentMethod) {
+      case 'PAYPAL':
+      case 'APPLE_PAY':
+        return 'DIGITAL_WALLET';
+      case 'CREDIT_CARD':
+        return 'CREDIT_CARD';
+      case 'DEBIT_CARD':
+        return 'DEBIT_CARD';
+      default:
+        return 'CREDIT_CARD'; // Fallback
+    }
+  }
 
   /**
    * 🔄 PATRÓN: Promotion Mapping Pattern
@@ -166,14 +184,17 @@ export class ProcessPaymentUseCase {
         savedOrder.id,
         paymentResult.transactionId!,
         pricingResult.total,
-        command.paymentMethod as any,
+        this.mapPaymentMethod(command.paymentMethod),
         'COMPLETED' as PaymentStatus,
         paymentResult.transactionId!,
         {
-          gateway: paymentResult.gateway || 'stripe',
-          processingTime: paymentResult.processingTime || 0,
-          fees: paymentResult.fees || 0
-        } as any,
+          processorResponse: paymentResult.gateway || 'stripe',
+          metadata: {
+            processingTime: paymentResult.processingTime || 0,
+            fees: paymentResult.fees || 0,
+            gateway: paymentResult.gateway || 'stripe'
+          }
+        },
         customer!.id
       );
 
@@ -310,7 +331,6 @@ export class ProcessPaymentUseCase {
       }
 
       // 2. Obtener estado del gateway si hay transacción
-      const gatewayStatus: TransactionStatus | undefined = undefined;
       // Simulated transaction status check
       // if (order.getTransactionId()) {
       //   gatewayStatus = await this.paymentGateway.getTransactionStatus(
