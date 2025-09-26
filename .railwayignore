@@ -1,0 +1,4 @@
+# Railway ignore file
+recursos/
+*.md
+!realtime-openai-ax/

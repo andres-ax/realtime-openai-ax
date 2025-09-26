@@ -1,4 +1,4 @@
-# Dockerfile optimizado para Railway
+# Dockerfile para Railway con Root Directory configurado
 FROM node:20-alpine AS base
 
 # Instalar dependencias del sistema
@@ -7,15 +7,15 @@ RUN apk add --no-cache libc6-compat
 # Etapa de dependencias
 FROM base AS deps
 WORKDIR /app
-COPY realtime-openai-ax/package.json realtime-openai-ax/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm ci --only=production
 
 # Etapa de build
 FROM base AS builder
 WORKDIR /app
-COPY realtime-openai-ax/package.json realtime-openai-ax/package-lock.json* ./
+COPY package.json package-lock.json* ./
 RUN npm ci
-COPY realtime-openai-ax/ .
+COPY . .
 RUN npm run build
 
 # Etapa de producción

@@ -43,21 +43,28 @@ El archivo `next.config.ts` ha sido actualizado con:
 # En Railway Dashboard
 1. New Project → Deploy from GitHub repo
 2. Seleccionar tu repositorio
-3. Railway detectará automáticamente la configuración
+3. Railway detectará automáticamente el Dockerfile
 ```
 
-### 2. Variables de Entorno (Opcional)
+### 2. ⚠️ CONFIGURAR ROOT DIRECTORY (CRÍTICO)
+```bash
+# En Railway Dashboard → Settings → Build
+1. Click en "Add Root Directory"
+2. Ingresar: realtime-openai-ax
+3. Click "Update"
+```
+
+### 3. Variables de Entorno (Opcional)
 ```bash
 # En Railway Dashboard → Variables
 NODE_ENV=production
 PORT=3000
-# Agregar otras variables según necesites
 ```
 
-### 3. Deploy Automático
-- Railway usará `railway.json` automáticamente
-- Build se ejecutará desde `realtime-openai-ax/`
-- La aplicación se iniciará con `npm start`
+### 4. Deploy Automático
+- Railway usará el Dockerfile automáticamente
+- Build se ejecutará desde `realtime-openai-ax/` (Root Directory)
+- La aplicación se iniciará con `node server.js`
 
 ## 📊 ESTRUCTURA DE ARCHIVOS PARA RAILWAY
 
