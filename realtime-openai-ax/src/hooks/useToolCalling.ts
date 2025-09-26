@@ -300,15 +300,16 @@ export const TOOL_FUNCTIONS: Record<string, ToolFunction> = {
     handler: (args: Record<string, unknown>): ToolExecutionResult => {
       console.log('[TOOL] 💳 Transferring to payment agent:', args);
       
-      // Disparar evento para cambio de vista a checkout
-      const checkoutEvent = new CustomEvent('proceedToCheckout', {
-        detail: { context: args }
-      });
-      window.dispatchEvent(checkoutEvent);
+      // NOTA: Ya no disparamos el evento proceedToCheckout para evitar duplicación
+      // Solo disparamos el evento transferAgent que cambiará la vista y el agente
       
-      // Disparar evento para cambio de agente
+      // Disparar evento para cambio de agente (incluye cambio de vista)
       const transferEvent = new CustomEvent('transferAgent', {
-        detail: { targetAgent: 'payment', context: args }
+        detail: { 
+          targetAgent: 'payment', 
+          context: args,
+          changeView: 'checkout' // Añadimos indicación para cambiar vista
+        }
       });
       window.dispatchEvent(transferEvent);
       

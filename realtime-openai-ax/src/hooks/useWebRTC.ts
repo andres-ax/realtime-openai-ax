@@ -40,20 +40,29 @@ interface UseWebRTCReturn {
 }
 
 // Configuraciones de agentes (mantenemos nuestra lógica de dominio)
+// NOTA: Ambos agentes usan la misma voz para permitir actualización de sesión sin desconexión
 const AGENT_CONFIGS = {
   sales: {
-    voice: 'alloy',
-    instructions: `You are Luxora a food service sales agent with the following responsibilities:
-1. Help customers find the best meal for their needs
-2. Always use the focus_menu_item tool to highlight specific menu items when:
-   - talking about a menu item to the customer
-   - Customer mentions a menu item 
+    voice: 'alloy', // Usamos 'alloy' para ambos agentes
+    instructions: `You are Luxora, a highly interactive food service sales agent with the following responsibilities:
+1. Help customers find the best meal for their needs with enthusiastic recommendations
+2. ALWAYS use the focus_menu_item tool to highlight specific menu items when:
+   - Talking about a menu item to the customer
+   - Customer mentions a menu item
+   - After each item is added to the cart (to keep visual focus)
 3. CONSTANTLY use the order tool to update the customer's cart throughout the conversation:
    - When customer wants to add an item to their order
    - When customer wants to remove an item from their order
    - When customer wants to see their current order
    - When customer confirms they want to purchase
    - Keep the order updated in real-time as the conversation progresses
+
+4. CRITICAL INTERACTION REQUIREMENTS:
+   - After EVERY item added to cart: Confirm the addition verbally, suggest complementary items, and ask if they want anything else
+   - When cart has items: Regularly remind customers what's in their cart and ask if they're ready to proceed to checkout
+   - If customer seems done ordering: Ask explicitly if they want to proceed to checkout
+   - If customer confirms order: Use order tool with customer_confirm:"yes" and guide them to payment process
+   - NEVER go silent after adding items - always acknowledge and guide to next steps
 
 ---
 You can only sell:
@@ -71,33 +80,56 @@ You can only sell:
 The focus_menu_item tool controls an UI with pictures of the menu items. You will receive descriptions of the pictures the customer will see.
 The order tool controls the cart display and order management. Use both tools constantly to provide the best experience.
 
-IMPORTANT: Update the order tool frequently to keep the customer's cart visible and current throughout the conversation.`,
+IMPORTANT CONVERSATION FLOW:
+1. When customer orders item(s): Add to cart with order tool, confirm verbally, suggest complementary items
+2. After adding items: Always ask "Would you like anything else?" or suggest specific complementary items
+3. When customer is done ordering: Ask "Would you like to proceed to checkout?" 
+4. If customer confirms: Use order tool with customer_confirm:"yes" parameter and guide them to payment
+5. NEVER end your turn without clear guidance on next steps for the customer
+
+Remember to be engaging, conversational and NEVER stop guiding the customer through the ordering process.`,
     tools: ['focus_menu_item', 'order', 'transfer_to_payment']
   },
   payment: {
-    voice: 'echo',
-    instructions: `You are Karol, a payments and delivery agent, with the following responsibilities:
-1. Ask the customer to review and confirm the items in their cart (menu item names & quantities).
+    voice: 'alloy', // Misma voz que sales para permitir actualización sin desconexión
+    instructions: `You are Karol, a highly interactive payments and delivery agent, with the following responsibilities:
+1. ALWAYS begin by reviewing the customer's cart items and quantities, and ask them to confirm if everything is correct.
 2. Remind the customer that delivery is always free and continuously update the order data.
-3. Continuously update the order data while collect and validate:
-   • Payment information (credit card number, expiration date, CVV)
-   • Full name
-   • Delivery address
-   • Contact phone number
-4. If the customer says they're not sure which meal to buy at any point or want to see other menu items, transfer immediately call the transfer_to_menu_agent tool to hand off to a menu-specialist.
-5. Once all required fields (cart, name, address, contact_phone, num) are provided by the customer and has confirmed by setting "confirm":"yes", call update_order_data one final time with all fields and "confirm":"yes", then thank the customer and conclude the session.
+3. ACTIVELY collect and validate information in this specific order:
+   • Full name - Ask: "May I have your full name for the order?"
+   • Delivery address - Ask: "What's the delivery address for your order?"
+   • Contact phone - Ask: "What phone number should we use for delivery updates?"
+   • Payment information - Ask: "Now for payment details. What's your credit card number?"
+   • After card number, ask for expiration date: "What's the expiration date on your card? (MM/YY format)"
+   • Finally ask for CVV: "And the 3-digit security code on the back?"
+
+4. CRITICAL INTERACTION REQUIREMENTS:
+   • After EACH piece of information is provided: Confirm verbally what was received and update the data
+   • Use update_order_data tool after EACH new piece of information
+   • Always guide customer to the next required piece of information
+   • If information is missing or invalid: Politely ask again with specific guidance
+   • NEVER go silent - always acknowledge input and guide to next steps
+
+5. If the customer says they're not sure which meal to buy or want to see other menu items, immediately call the transfer_to_menu_agent tool.
+
+6. FINAL CONFIRMATION PROCESS:
+   • Once all required fields are collected: Read back ALL information to the customer
+   • Ask explicitly: "Is everything correct? Shall I process your order now?"
+   • If confirmed: Use update_order_data with "confirm":"yes" parameter
+   • Thank the customer warmly and explain what happens next with their order
 
 IMPORTANT: You can only work with the existing cart items. DO NOT add new menu items to the cart. If the customer wants to add items, transfer them back to the sales agent using transfer_to_menu_agent.
 
 ---
-Use clear, polite language, validate inputs, allow the customer to correct mistakes, and rely only on these tools:
-- update_order_data
-- transfer_to_menu_agent
+IMPORTANT CONVERSATION FLOW:
+1. Start with cart review and confirmation
+2. Collect information in the specified order, confirming each piece
+3. After collecting all information, perform final review
+4. Get explicit confirmation before finalizing
+5. NEVER end your turn without clear guidance on what information is needed next
+6. Use update_order_data tool after EVERY new piece of information
 
----
-Constantly update the order data as much as possible.
-Continuously update the order data as soon as the customer provides the information.
-Use the update_order_data tool as much as possible`,
+Remember to be engaging, conversational and NEVER stop guiding the customer through the checkout process.`,
     tools: ['update_order_data', 'transfer_to_menu_agent']
   }
 };
@@ -391,7 +423,50 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     }
   }, [updateStatus, options, configureTools, disconnect, processFunctionCall]);
 
-  // 🔄 Cambio de agente (reconectar con nuevo agente)
+  // 🔄 Actualizar sesión sin desconectar
+  const updateSession = useCallback(async (newAgent: AgentType) => {
+    console.log(`[WEBRTC] 🔄 Updating session to agent: ${newAgent}`);
+    
+    if (!dataChannelRef.current || dataChannelRef.current.readyState !== 'open') {
+      console.error('[WEBRTC] ❌ Cannot update session - data channel not ready');
+      return false;
+    }
+    
+    try {
+      // Obtener herramientas filtradas para el nuevo agente
+      const allTools = getRealtimeToolDefinitions();
+      const agentTools = AGENT_CONFIGS[newAgent].tools;
+      const filteredTools = allTools.filter(tool => 
+        agentTools.includes(tool.name)
+      );
+      
+      // Crear mensaje de actualización de sesión
+      // NOTA: No podemos actualizar la voz una vez que hay audio del asistente en la conversación
+      // Error: "Cannot update a conversation's voice if assistant audio is present."
+      const sessionUpdateMessage = {
+        type: 'session.update',
+        session: {
+          // Eliminamos voice para evitar el error "cannot_update_voice"
+          instructions: AGENT_CONFIGS[newAgent].instructions,
+          tools: filteredTools,
+          tool_choice: 'auto'
+        }
+      };
+      
+      console.log(`[WEBRTC] 📋 Session update message:`, JSON.stringify(sessionUpdateMessage, null, 2));
+      
+      // Enviar mensaje de actualización
+      dataChannelRef.current.send(JSON.stringify(sessionUpdateMessage));
+      console.log(`[WEBRTC] ✅ Session update sent successfully`);
+      
+      return true;
+    } catch (error) {
+      console.error('[WEBRTC] ❌ Failed to update session:', error);
+      return false;
+    }
+  }, [getRealtimeToolDefinitions]);
+
+  // 🔄 Cambio de agente (sin reconexión cuando es posible)
   const switchAgent = useCallback(async (newAgent: AgentType) => {
     console.log(`[WEBRTC] 🔄 Switching to agent: ${newAgent}`);
     
@@ -410,6 +485,33 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     setIsConnecting(true);
     
     try {
+      if (status === 'connected' && dataChannelRef.current?.readyState === 'open') {
+        // Intentar actualizar la sesión sin desconectar
+        console.log(`[WEBRTC] 🔄 Attempting to update session without disconnecting...`);
+        
+        // NOTA: La actualización de sesión funciona para cambiar instrucciones y herramientas,
+        // pero no puede cambiar la voz una vez que hay audio del asistente en la conversación.
+        // Si los agentes usan voces diferentes, debemos recurrir a la reconexión completa.
+        const voicesAreDifferent = AGENT_CONFIGS[currentAgent].voice !== AGENT_CONFIGS[newAgent].voice;
+        
+        if (voicesAreDifferent) {
+          console.log(`[WEBRTC] ⚠️ Agents use different voices (${AGENT_CONFIGS[currentAgent].voice} vs ${AGENT_CONFIGS[newAgent].voice})`);
+          console.log(`[WEBRTC] ⚠️ Cannot update voice in active session, falling back to reconnection`);
+        } else {
+          const updateSuccess = await updateSession(newAgent);
+          
+          if (updateSuccess) {
+            console.log(`[WEBRTC] ✅ Session updated successfully to agent: ${newAgent}`);
+            setCurrentAgent(newAgent);
+            options.onAgentSwitch?.(newAgent);
+            return;
+          } else {
+            console.log(`[WEBRTC] ⚠️ Session update failed, falling back to reconnection`);
+          }
+        }
+      }
+      
+      // Si no hay conexión activa o falló la actualización, conectar normalmente
       if (status === 'connected') {
         disconnect();
         // Pequeña pausa para limpiar conexión anterior
@@ -421,7 +523,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     } finally {
       setIsConnecting(false);
     }
-  }, [status, currentAgent, isConnecting, disconnect, connect, options]);
+  }, [status, currentAgent, isConnecting, disconnect, connect, updateSession, options]);
 
   // 📨 Enviar mensaje via data channel
   const sendMessage = useCallback((message: unknown) => {

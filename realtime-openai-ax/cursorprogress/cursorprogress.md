@@ -800,3 +800,155 @@ try {
 ✅ **Datos de tarjeta se actualizan correctamente**  
 ✅ **Mapeo de campos verificado y funcional**  
 ✅ **Flujo de pagos optimizado y simplificado**
+
+---
+
+## 🔧 **CORRECCIÓN CRÍTICA - DUPLICACIÓN DE AGENTE KAROL (26/09/2025)**
+
+### 🚨 **PROBLEMA IDENTIFICADO**
+- **Error:** Al pasar al checkout o flujo de pago se activaban dos instancias del agente Karol simultáneamente
+- **Causa:** Eventos duplicados de transferencia de agente por múltiples listeners
+- **Impacto:** Confusión para el usuario con dos voces superpuestas y respuestas duplicadas
+
+### ✅ **SOLUCIÓN IMPLEMENTADA**
+
+#### **📁 Archivos Corregidos:**
+- [x] `useToolCalling.ts`: Modificada herramienta `transfer_to_payment` para evitar eventos duplicados
+- [x] `VoiceInterface.tsx`: Actualizado manejador de eventos para procesar nuevo campo `changeView`
+- [x] `voice-ordering/page.tsx`: Añadidos manejadores para eventos directos de cambio de vista
+
+#### **🔄 Nuevo Flujo de Transferencia:**
+
+**1. Separación de Responsabilidades:**
+```typescript
+// Antes (causaba duplicación):
+// 1. transfer_to_payment → dispara proceedToCheckout
+// 2. proceedToCheckout → dispara transferAgent
+// 3. Resultado: Dos eventos transferAgent casi simultáneos
+
+// Después (flujo optimizado):
+// 1. transfer_to_payment → dispara UN SOLO transferAgent con changeView='checkout'
+// 2. VoiceInterface procesa changeView y dispara directViewCheckout
+// 3. Resultado: Un solo cambio de agente y una actualización de vista
+```
+
+**2. Nuevos Eventos Directos:**
+- `directViewCheckout`: Cambia solo la vista a checkout sin cambiar agente
+- `directViewMenu`: Cambia solo la vista a menú sin cambiar agente
+
+**3. Campo `changeView` en Evento transferAgent:**
+```typescript
+const transferEvent = new CustomEvent('transferAgent', {
+  detail: { 
+    targetAgent: 'payment', 
+    context: args,
+    changeView: 'checkout' // Nuevo campo para indicar cambio de vista
+  }
+});
+```
+
+#### **🏗️ Patrones Arquitectónicos Aplicados:**
+- **🔄 Separation of Concerns:** Separación clara entre cambio de agente y cambio de vista
+- **📡 Event-Driven Architecture:** Comunicación desacoplada mediante eventos específicos
+- **🎭 Decorator Pattern:** Enriquecimiento del evento transferAgent con metadata adicional
+- **🛡️ Single Responsibility Principle:** Cada componente con responsabilidad única
+- **🔧 Guard Pattern:** Validaciones para prevenir cambios de estado innecesarios
+
+### 🎯 **RESULTADO:**
+✅ **Solo un agente Karol activo a la vez**  
+✅ **Transición fluida entre agentes sin duplicación**  
+✅ **Cambio de vista sincronizado con cambio de agente**  
+✅ **Experiencia de usuario mejorada sin interrupciones**  
+✅ **Sistema de eventos optimizado y robusto**
+
+---
+
+## 🔧 **OPTIMIZACIÓN CRÍTICA - CAMBIO DE AGENTE SIN DESCONEXIÓN (27/09/2025)**
+
+### 🚨 **PROBLEMA IDENTIFICADO**
+- **Error:** Al cambiar de productos a pago, la conexión WebRTC se desconectaba y reconectaba completamente
+- **Causa:** La función `switchAgent` desconectaba la sesión existente y creaba una nueva
+- **Impacto:** Experiencia de usuario interrumpida con pausas perceptibles durante el cambio de agente
+
+### ✅ **SOLUCIÓN IMPLEMENTADA**
+
+#### **📁 Archivos Corregidos:**
+- [x] `useWebRTC.ts`: Implementada función `updateSession` para actualizar la sesión sin desconectar
+- [x] `useWebRTC.ts`: Modificada función `switchAgent` para usar `updateSession` cuando sea posible
+- [x] `useWebRTC.ts`: Agregada verificación de voces diferentes para evitar error `cannot_update_voice`
+
+#### **🔄 Nuevo Flujo de Cambio de Agente:**
+
+**1. Actualización de Sesión sin Desconexión:**
+```typescript
+// Antes (causaba desconexión):
+// 1. switchAgent → disconnect()
+// 2. Esperar 1 segundo
+// 3. connect(newAgent)
+// 4. Resultado: Interrupción completa de la conexión
+
+// Después (sin desconexión cuando es posible):
+// 1. switchAgent → verificar si las voces son iguales
+// 2. Si son iguales → updateSession(newAgent) sin desconexión
+// 3. Si son diferentes → fallback a disconnect/connect
+// 4. Resultado: Cambio fluido cuando es posible, fallback seguro cuando no lo es
+```
+
+**2. Implementación de `updateSession` con Limitaciones de API:**
+```typescript
+const updateSession = useCallback(async (newAgent: AgentType) => {
+  // Crear mensaje de actualización de sesión
+  // NOTA: No podemos actualizar la voz una vez que hay audio del asistente
+  const sessionUpdateMessage = {
+    type: 'session.update',
+    session: {
+      // Eliminamos voice para evitar el error "cannot_update_voice"
+      instructions: AGENT_CONFIGS[newAgent].instructions,
+      tools: filteredTools,
+      tool_choice: 'auto'
+    }
+  };
+  
+  // Enviar mensaje de actualización a través del canal de datos existente
+  dataChannelRef.current.send(JSON.stringify(sessionUpdateMessage));
+}, [getRealtimeToolDefinitions]);
+```
+
+**3. Verificación Previa de Compatibilidad:**
+```typescript
+// Verificar si los agentes usan voces diferentes
+const voicesAreDifferent = AGENT_CONFIGS[currentAgent].voice !== AGENT_CONFIGS[newAgent].voice;
+
+if (voicesAreDifferent) {
+  console.log(`[WEBRTC] ⚠️ Agents use different voices, falling back to reconnection`);
+  // Usar método de reconexión completa
+} else {
+  // Intentar actualización sin desconexión
+}
+```
+
+**4. Limitaciones Descubiertas de la API:**
+- **Error:** `cannot_update_voice` - "Cannot update a conversation's voice if assistant audio is present"
+- **Solución:** Verificar si los agentes usan la misma voz antes de intentar actualizar
+- **Fallback:** Si usan voces diferentes, recurrir al método de desconexión/reconexión
+
+#### **🏗️ Patrones Arquitectónicos Aplicados:**
+- **🔄 Session Update Pattern:** Actualización de sesión sin interrumpir la conexión
+- **📡 WebRTC Data Channel Pattern:** Uso del canal de datos para cambiar configuración
+- **🎭 Strategy Pattern:** Selección dinámica entre actualización y reconexión
+- **🛡️ Graceful Degradation Pattern:** Fallback a método anterior si la actualización falla
+- **🔧 Connection Pooling Pattern:** Reutilización de conexiones existentes
+- **🔍 Feature Detection Pattern:** Verificación previa de compatibilidad de voces
+
+### 🎯 **RESULTADO:**
+✅ **Cambio de agente sin interrupción al usar la misma voz para ambos**  
+✅ **Fallback automático a reconexión si fuera necesario**  
+✅ **Manejo robusto de las limitaciones de la API de OpenAI**  
+✅ **Experiencia de usuario mejorada con transiciones fluidas**  
+✅ **Implementación resiliente con estrategia de degradación elegante**
+
+### 🔧 **OPTIMIZACIÓN ADICIONAL (27/09/2025)**
+- **Configuración actualizada:** Ambos agentes (Luxora y Karol) ahora usan la misma voz `'alloy'`
+- **Beneficio:** Permite siempre utilizar la actualización de sesión sin desconexión
+- **Resultado:** Transición perfectamente fluida entre agentes de ventas y pagos
+- **Impacto en UX:** Experiencia de usuario consistente y sin interrupciones

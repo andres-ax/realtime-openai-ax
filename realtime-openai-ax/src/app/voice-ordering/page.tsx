@@ -353,6 +353,17 @@ export default function VoiceOrderingPage() {
       // Aquí se actualizarían los campos del formulario de checkout
       // Por ahora solo logueamos para debug
     };
+    
+    // Handlers para cambio directo de vista (desde VoiceInterface)
+    const handleDirectViewCheckout = (event: CustomEvent) => {
+      console.log('[VOICE-ORDERING] 🔄 Direct view change to checkout:', event.detail);
+      setCurrentView('checkout');
+    };
+    
+    const handleDirectViewMenu = (event: CustomEvent) => {
+      console.log('[VOICE-ORDERING] 🔄 Direct view change to menu:', event.detail);
+      setCurrentView('menu');
+    };
 
     // Handler para orden completa
     const handleOrderComplete = (event: CustomEvent) => {
@@ -377,6 +388,8 @@ export default function VoiceOrderingPage() {
     window.addEventListener('backToMenu', handleBackToMenu as EventListener);
     window.addEventListener('updateOrderData', handleUpdateOrderData as EventListener);
     window.addEventListener('orderComplete', handleOrderComplete as EventListener);
+    window.addEventListener('directViewCheckout', handleDirectViewCheckout as EventListener);
+    window.addEventListener('directViewMenu', handleDirectViewMenu as EventListener);
     // window.addEventListener('transferAgent', handleTransferAgent as EventListener); // REMOVIDO - evitar duplicados
 
     return () => {
@@ -386,6 +399,8 @@ export default function VoiceOrderingPage() {
       window.removeEventListener('backToMenu', handleBackToMenu as EventListener);
       window.removeEventListener('updateOrderData', handleUpdateOrderData as EventListener);
       window.removeEventListener('orderComplete', handleOrderComplete as EventListener);
+      window.removeEventListener('directViewCheckout', handleDirectViewCheckout as EventListener);
+      window.removeEventListener('directViewMenu', handleDirectViewMenu as EventListener);
       // window.removeEventListener('transferAgent', handleTransferAgent as EventListener); // REMOVIDO - evitar duplicados
     };
   }, []);

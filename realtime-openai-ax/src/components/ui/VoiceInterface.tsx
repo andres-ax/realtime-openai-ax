@@ -92,9 +92,21 @@ export default function VoiceInterface({
   // 🔄 Escuchar eventos de transferencia de agente
   useEffect(() => {
     const handleTransferAgent = (event: CustomEvent) => {
-      const { targetAgent } = event.detail;
-      console.log(`[VOICE-INTERFACE] 🔄 Transfer agent event received: ${targetAgent}`);
+      const { targetAgent, changeView } = event.detail;
+      console.log(`[VOICE-INTERFACE] 🔄 Transfer agent event received: ${targetAgent}, changeView: ${changeView}`);
       
+      // Cambiar vista si se especifica
+      if (changeView) {
+        // Disparar evento para cambiar vista sin duplicar eventos de agente
+        const viewEvent = new CustomEvent(
+          changeView === 'checkout' ? 'directViewCheckout' : 'directViewMenu', 
+          { detail: { source: 'transferAgent' } }
+        );
+        console.log(`[VOICE-INTERFACE] 🔄 Dispatching direct view change: ${changeView}`);
+        window.dispatchEvent(viewEvent);
+      }
+      
+      // Cambiar agente
       if (targetAgent === 'payment') {
         switchAgent('payment');
       } else if (targetAgent === 'sales') {
