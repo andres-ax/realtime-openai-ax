@@ -4,15 +4,27 @@ import { useState, useCallback, useRef } from 'react';
 import { useToolCalling } from './useToolCalling';
 
 /**
- * 🎤 WEBRTC HOOK SIMPLIFICADO
+ * useWebRTC React Hook
  * 
- * Basado en el proyecto exitoso cameronking4/openai-realtime-api-nextjs
- * Enfoque directo sin capas de abstracción innecesarias
+ * Provides a simplified interface for managing a WebRTC connection to the OpenAI Realtime API,
+ * including agent switching, tool configuration, and function calling integration.
+ * 
+ * Inspired by cameronking4/openai-realtime-api-nextjs, this hook avoids unnecessary abstraction layers.
  */
 
+/**
+ * Represents the current status of the WebRTC voice connection.
+ */
 export type VoiceStatus = 'disconnected' | 'connecting' | 'connected' | 'speaking' | 'listening' | 'error';
+
+/**
+ * Represents the available agent types for the conversation.
+ */
 export type AgentType = 'sales' | 'payment';
 
+/**
+ * Structure of the session data returned by the backend session API.
+ */
 interface SessionData {
   client_secret: {
     value: string;
@@ -22,34 +34,86 @@ interface SessionData {
   expires_at: number;
 }
 
+/**
+ * Options for configuring the useWebRTC hook.
+ */
 interface UseWebRTCOptions {
+  /**
+   * Callback invoked when the connection status changes.
+   */
   onStatusChange?: (status: VoiceStatus) => void;
+  /**
+   * Callback invoked when a message is received from the data channel.
+   */
   onMessage?: (message: unknown) => void;
+  /**
+   * Callback invoked when an error occurs.
+   */
   onError?: (error: Error) => void;
+  /**
+   * Callback invoked when the agent is switched.
+   */
   onAgentSwitch?: (agent: AgentType) => void;
 }
 
+/**
+ * The return value of the useWebRTC hook.
+ */
 interface UseWebRTCReturn {
+  /**
+   * The current status of the WebRTC connection.
+   */
   status: VoiceStatus;
+  /**
+   * Whether the connection is currently established.
+   */
   isConnected: boolean;
+  /**
+   * The currently active agent type.
+   */
   currentAgent: AgentType;
+  /**
+   * Initiates a connection to the OpenAI Realtime API with the specified agent.
+   * @param agentType The agent type to connect as (defaults to 'sales').
+   */
   connect: (agentType?: AgentType) => Promise<void>;
+  /**
+   * Cleanly disconnects the current WebRTC session.
+   */
   disconnect: () => void;
+  /**
+   * Switches to a different agent, updating session instructions and tools if possible.
+   * @param newAgent The new agent type to switch to.
+   */
   switchAgent: (newAgent: AgentType) => Promise<void>;
+  /**
+   * Sends a message over the data channel to the assistant.
+   * @param message The message to send (object or string).
+   */
   sendMessage: (message: unknown) => void;
 }
 
-// Configuraciones de agentes (mantenemos nuestra lógica de dominio)
-// NOTA: Ambos agentes usan la misma voz para permitir actualización de sesión sin desconexión
-const AGENT_CONFIGS = {
+/**
+ * Agent configuration mapping.
+ * 
+ * Both agents use the same voice to allow session updates without requiring a full reconnection.
+ * Each agent has its own set of instructions and allowed tools.
+ */
+const AGENT_CONFIGS: Record<AgentType, {
+  voice: string;
+  instructions: string;
+  tools: string[];
+}> = {
   sales: {
-    voice: 'alloy', // Usamos 'alloy' para ambos agentes
-    instructions: `You are Luxora, a highly interactive food service sales agent with the following responsibilities:
+    voice: 'alloy',
+    instructions: `You are Luxora, a highly interactive and PROACTIVE food service sales agent with the following responsibilities:
 1. Help customers find the best meal for their needs with enthusiastic recommendations
 2. ALWAYS use the focus_menu_item tool to highlight specific menu items when:
    - Talking about a menu item to the customer
-   - Customer mentions a menu item
+   - Customer mentions a menu item 
    - After each item is added to the cart (to keep visual focus)
+   - EVEN WHEN just mentioning an item in conversation - ALWAYS focus it
+   - After ANY action - focus on a relevant or complementary item
 3. CONSTANTLY use the order tool to update the customer's cart throughout the conversation:
    - When customer wants to add an item to their order
    - When customer wants to remove an item from their order
@@ -58,11 +122,14 @@ const AGENT_CONFIGS = {
    - Keep the order updated in real-time as the conversation progresses
 
 4. CRITICAL INTERACTION REQUIREMENTS:
-   - After EVERY item added to cart: Confirm the addition verbally, suggest complementary items, and ask if they want anything else
-   - When cart has items: Regularly remind customers what's in their cart and ask if they're ready to proceed to checkout
+   - NEVER WAIT FOR USER PROMPTING - always take initiative in the conversation
+   - After EVERY tool call (focus_menu_item, order): IMMEDIATELY follow up with a question or suggestion
+   - After EVERY item added to cart: Confirm the addition verbally, suggest 1-2 specific complementary items, and ask if they want to add them
+   - When cart has items: Every 2-3 turns, remind customers what's in their cart and ask if they're ready to proceed to checkout
    - If customer seems done ordering: Ask explicitly if they want to proceed to checkout
    - If customer confirms order: Use order tool with customer_confirm:"yes" and guide them to payment process
-   - NEVER go silent after adding items - always acknowledge and guide to next steps
+   - ABSOLUTELY NEVER go silent after any action - always acknowledge and guide to next steps
+   - If you notice you haven't spoken in a few seconds, IMMEDIATELY suggest something or ask a question
 
 ---
 You can only sell:
@@ -81,71 +148,126 @@ The focus_menu_item tool controls an UI with pictures of the menu items. You wil
 The order tool controls the cart display and order management. Use both tools constantly to provide the best experience.
 
 IMPORTANT CONVERSATION FLOW:
-1. When customer orders item(s): Add to cart with order tool, confirm verbally, suggest complementary items
-2. After adding items: Always ask "Would you like anything else?" or suggest specific complementary items
-3. When customer is done ordering: Ask "Would you like to proceed to checkout?" 
-4. If customer confirms: Use order tool with customer_confirm:"yes" parameter and guide them to payment
-5. NEVER end your turn without clear guidance on next steps for the customer
+1. When customer orders item(s): Add to cart with order tool, confirm verbally, and IMMEDIATELY suggest specific complementary items
+2. After adding items: ALWAYS say "I've added [item] to your cart. Would you like to add [specific complementary item]?" 
+3. After ANY tool call: ALWAYS follow up with a question or suggestion without waiting for user input
+4. When customer is done ordering: Ask "Would you like to proceed to checkout?" 
+5. If customer confirms: Use order tool with customer_confirm:"yes" parameter and guide them to payment
+6. NEVER end your turn without clear guidance on next steps for the customer
+7. If there's silence or you haven't spoken in a few seconds: IMMEDIATELY make a suggestion or ask a question
 
-Remember to be engaging, conversational and NEVER stop guiding the customer through the ordering process.`,
+Remember to be engaging, conversational, PROACTIVE and NEVER stop guiding the customer through the ordering process. NEVER wait for the user to prompt you to continue - always take the initiative.`,
     tools: ['focus_menu_item', 'order', 'transfer_to_payment']
   },
   payment: {
-    voice: 'alloy', // Misma voz que sales para permitir actualización sin desconexión
-    instructions: `You are Karol, a highly interactive payments and delivery agent, with the following responsibilities:
-1. ALWAYS begin by reviewing the customer's cart items and quantities, and ask them to confirm if everything is correct.
-2. Remind the customer that delivery is always free and continuously update the order data.
-3. ACTIVELY collect and validate information in this specific order:
-   • Full name - Ask: "May I have your full name for the order?"
-   • Delivery address - Ask: "What's the delivery address for your order?"
-   • Contact phone - Ask: "What phone number should we use for delivery updates?"
-   • Payment information - Ask: "Now for payment details. What's your credit card number?"
-   • After card number, ask for expiration date: "What's the expiration date on your card? (MM/YY format)"
-   • Finally ask for CVV: "And the 3-digit security code on the back?"
+    voice: 'alloy',
+    instructions: `You are Karol, a highly interactive, PROACTIVE payments and delivery agent, with the following responsibilities:
+1. ALWAYS begin by introducing yourself: "I'm Karol, your payment assistant. I'll guide you through the checkout process step by step."
+2. IMMEDIATELY review the customer's cart items and quantities, and ask them to confirm if everything is correct.
+3. Remind the customer that delivery is always free and continuously update the order data.
+4. ACTIVELY collect and validate information in this EXACT order, NEVER skipping steps:
 
-4. CRITICAL INTERACTION REQUIREMENTS:
-   • After EACH piece of information is provided: Confirm verbally what was received and update the data
+   STEP 1: FULL NAME
+   • Ask: "First, may I have your full name for the order?"
+   • After receiving: Confirm "Thank you, [name]. I've recorded that." and update_order_data
+   • IMMEDIATELY proceed to Step 2
+
+   STEP 2: DELIVERY ADDRESS
+   • Ask: "Now, what's the complete delivery address for your order?"
+   • After receiving: Confirm "Thanks, I've saved the delivery address: [address]" and update_order_data
+   • IMMEDIATELY proceed to Step 3
+
+   STEP 3: CONTACT PHONE
+   • Ask: "Great! What phone number should we use for delivery updates?"
+   • After receiving: Confirm "Perfect, I've added the phone number: [phone]" and update_order_data
+   • IMMEDIATELY proceed to Step 4
+
+   STEP 4: PAYMENT INFORMATION (CARD NUMBER)
+   • Ask: "Now for payment details. What's your credit card number?"
+   • After receiving: Confirm "Thank you, I've securely recorded your card number" and update_order_data
+   • IMMEDIATELY proceed to Step 5
+
+   STEP 5: CARD EXPIRATION DATE
+   • Ask: "What's the expiration date on your card? Please use MM/YY format."
+   • After receiving: Confirm "Got it, expiration date recorded" and update_order_data
+   • IMMEDIATELY proceed to Step 6
+
+   STEP 6: CVV SECURITY CODE
+   • Ask: "Finally, what's the 3-digit security code on the back of your card?"
+   • After receiving: Confirm "Perfect! I've added the security code" and update_order_data
+   • IMMEDIATELY proceed to Final Review
+
+5. CRITICAL INTERACTION REQUIREMENTS:
+   • NEVER WAIT FOR USER PROMPTING - always take initiative in the conversation
+   • After EVERY tool call (update_order_data): IMMEDIATELY follow up with confirmation and the next question
+   • After EACH piece of information is provided: Confirm verbally what was received, update the data, and IMMEDIATELY ask for the next piece
    • Use update_order_data tool after EACH new piece of information
-   • Always guide customer to the next required piece of information
+   • Always guide customer to the next required piece of information without waiting for them to ask
+   • FOLLOW THE EXACT STEP-BY-STEP SEQUENCE - never jump ahead or skip steps
    • If information is missing or invalid: Politely ask again with specific guidance
-   • NEVER go silent - always acknowledge input and guide to next steps
+   • ABSOLUTELY NEVER go silent after any action - always acknowledge and guide to next steps
+   • If you notice you haven't spoken in a few seconds, IMMEDIATELY ask for the next piece of information
+   • For each step, use the EXACT wording provided in the step instructions
 
-5. If the customer says they're not sure which meal to buy or want to see other menu items, immediately call the transfer_to_menu_agent tool.
+6. If the customer says they're not sure which meal to buy or want to see other menu items, immediately call the transfer_to_menu_agent tool.
 
-6. FINAL CONFIRMATION PROCESS:
-   • Once all required fields are collected: Read back ALL information to the customer
+7. FINAL CONFIRMATION PROCESS (STEP 7):
+   • After completing Steps 1-6: Say "Great! Let me review all the information for your order:"
+   • Read back ALL information to the customer in this order:
+     - Cart items and quantities
+     - Customer name
+     - Delivery address
+     - Contact phone
+     - Payment method (just mention "Credit card ending in XXXX" - don't read full number)
    • Ask explicitly: "Is everything correct? Shall I process your order now?"
    • If confirmed: Use update_order_data with "confirm":"yes" parameter
-   • Thank the customer warmly and explain what happens next with their order
+   • Thank the customer warmly: "Thank you for your order! Your delicious food will be delivered in approximately 30-45 minutes. Enjoy your meal!"
 
 IMPORTANT: You can only work with the existing cart items. DO NOT add new menu items to the cart. If the customer wants to add items, transfer them back to the sales agent using transfer_to_menu_agent.
 
 ---
-IMPORTANT CONVERSATION FLOW:
-1. Start with cart review and confirmation
-2. Collect information in the specified order, confirming each piece
-3. After collecting all information, perform final review
-4. Get explicit confirmation before finalizing
-5. NEVER end your turn without clear guidance on what information is needed next
-6. Use update_order_data tool after EVERY new piece of information
+IMPORTANT CONVERSATION FLOW - FOLLOW THIS EXACT SEQUENCE:
+1. Introduce yourself and explain you'll guide them step by step
+2. Review cart items and ask for confirmation
+3. Follow the numbered steps in EXACT order (Steps 1-6):
+   - Step 1: Full name
+   - Step 2: Delivery address
+   - Step 3: Contact phone
+   - Step 4: Card number
+   - Step 5: Expiration date
+   - Step 6: CVV code
+4. For each step:
+   - Ask for the information using the EXACT wording provided
+   - After receiving: Confirm receipt and update data
+   - IMMEDIATELY proceed to the next step
+5. After Step 6, proceed to Final Review (Step 7)
+6. Get explicit confirmation before finalizing
+7. Use update_order_data tool after EVERY piece of information
+8. If there's silence or you haven't spoken in a few seconds: IMMEDIATELY continue with the next step
 
-Remember to be engaging, conversational and NEVER stop guiding the customer through the checkout process.`,
+Remember to be engaging, conversational, PROACTIVE and NEVER stop guiding the customer through the checkout process. NEVER wait for the user to prompt you to continue - always take the initiative.`,
     tools: ['update_order_data', 'transfer_to_menu_agent']
   }
 };
 
+/**
+ * useWebRTC React Hook
+ * 
+ * @param options Optional configuration callbacks for status, message, error, and agent switch events.
+ * @returns An object with connection status, agent info, and control methods.
+ */
 export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
   const [status, setStatus] = useState<VoiceStatus>('disconnected');
   const [currentAgent, setCurrentAgent] = useState<AgentType>('sales');
   const [isConnecting, setIsConnecting] = useState(false);
 
-  // Referencias para WebRTC (enfoque directo)
+  // WebRTC references for direct access to connection, data channel, media, and audio element.
   const peerConnectionRef = useRef<RTCPeerConnection | null>(null);
   const dataChannelRef = useRef<RTCDataChannel | null>(null);
   const mediaStreamRef = useRef<MediaStream | null>(null);
   const audioElementRef = useRef<HTMLAudioElement | null>(null);
 
-  // 🔧 Tool calling integration
+  // Tool calling integration (function calling for OpenAI Realtime API)
   const { processFunctionCall, getRealtimeToolDefinitions } = useToolCalling({
     onToolCall: (name, args, result) => {
       console.log(`[WEBRTC] 🔧 Tool executed: ${name}`, { args, result });
@@ -157,35 +279,41 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     }
   });
 
+  /**
+   * Updates the connection status and notifies the onStatusChange callback.
+   * @param newStatus The new status to set.
+   */
   const updateStatus = useCallback((newStatus: VoiceStatus) => {
     setStatus(newStatus);
     options.onStatusChange?.(newStatus);
     console.log(`[WEBRTC] Status: ${newStatus}`);
   }, [options]);
 
-  // 🔌 Desconexión limpia - definida antes de connect para evitar referencia circular
+  /**
+   * Cleanly disconnects the current WebRTC session, closing all resources.
+   */
   const disconnect = useCallback(() => {
     console.log('[WEBRTC] 🔌 Disconnecting...');
 
-    // Cerrar data channel
+    // Close data channel
     if (dataChannelRef.current) {
       dataChannelRef.current.close();
       dataChannelRef.current = null;
     }
 
-    // Cerrar peer connection
+    // Close peer connection
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
 
-    // Detener media stream
+    // Stop media stream
     if (mediaStreamRef.current) {
       mediaStreamRef.current.getTracks().forEach(track => track.stop());
       mediaStreamRef.current = null;
     }
 
-    // Limpiar audio element
+    // Clean up audio element
     if (audioElementRef.current) {
       audioElementRef.current.srcObject = null;
       audioElementRef.current = null;
@@ -195,14 +323,17 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     console.log('[WEBRTC] ✅ Disconnected successfully');
   }, [updateStatus]);
 
-  // 🔧 Configurar tools después de establecer conexión
+  /**
+   * Configures the available tools for the current agent after the data channel is open.
+   * Retries up to 3 times if the data channel is not ready.
+   * @param agentType The agent type whose tools should be configured.
+   * @param retryCount Internal retry counter (do not set manually).
+   */
   const configureTools = useCallback((agentType: AgentType, retryCount = 0) => {
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
-      // Configurar herramientas según el agente
+      // Filter tools for the agent
       const allTools = getRealtimeToolDefinitions();
       const agentTools = AGENT_CONFIGS[agentType].tools;
-      
-      // Filtrar herramientas según el agente
       const filteredTools = allTools.filter(tool => 
         agentTools.includes(tool.name)
       );
@@ -228,7 +359,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
       console.error(`[WEBRTC] ❌ Cannot configure tools - data channel not ready (attempt ${retryCount + 1})`);
       console.error(`[WEBRTC] 📊 Data channel state:`, dataChannelRef.current?.readyState);
       
-      // Retry hasta 3 veces con delay
+      // Retry up to 3 times with a delay
       if (retryCount < 3) {
         console.log(`[WEBRTC] 🔄 Retrying tools configuration in 1 second...`);
         setTimeout(() => {
@@ -240,7 +371,11 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     }
   }, [getRealtimeToolDefinitions]);
 
-  // 🔗 Conexión directa basada en proyecto exitoso
+  /**
+   * Establishes a new WebRTC connection to the OpenAI Realtime API using the specified agent.
+   * Handles session creation, peer connection, media, and data channel setup.
+   * @param agentType The agent type to connect as (defaults to 'sales').
+   */
   const connect = useCallback(async (agentType: AgentType = 'sales') => {
     try {
       setIsConnecting(true);
@@ -249,7 +384,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
 
       console.log(`[WEBRTC] 🚀 Connecting with agent: ${agentType}`);
 
-      // 1. Obtener ephemeral key (usar nuestro API existente)
+      // 1. Obtain ephemeral session key from backend API
       const sessionResponse = await fetch('/api/session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -257,7 +392,6 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
           model: 'gpt-4o-realtime-preview-2024-10-01',
           voice: AGENT_CONFIGS[agentType].voice,
           instructions: AGENT_CONFIGS[agentType].instructions
-          // Note: tools se configuran después de establecer la conexión
         })
       });
 
@@ -268,7 +402,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
       const sessionData: SessionData = await sessionResponse.json();
       console.log('[WEBRTC] 🔑 Session created:', sessionData.session_id);
 
-      // 2. Crear WebRTC peer connection (enfoque directo)
+      // 2. Create WebRTC peer connection
       const peerConnection = new RTCPeerConnection({
         iceServers: [
           { urls: 'stun:stun.l.google.com:19302' },
@@ -278,7 +412,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
 
       peerConnectionRef.current = peerConnection;
 
-      // 3. Configurar audio element
+      // 3. Set up audio element for playback
       const audioElement = new Audio();
       audioElement.autoplay = true;
       audioElementRef.current = audioElement;
@@ -289,7 +423,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
         updateStatus('connected');
       };
 
-      // 4. Obtener micrófono
+      // 4. Request microphone access
       console.log('[WEBRTC] 🎤 Requesting microphone access...');
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -301,12 +435,12 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
 
       mediaStreamRef.current = mediaStream;
 
-      // Agregar tracks de audio
+      // Add audio tracks to peer connection
       mediaStream.getTracks().forEach(track => {
         peerConnection.addTrack(track, mediaStream);
       });
 
-      // 5. Crear data channel para function calling
+      // 5. Create data channel for function calling
       const dataChannel = peerConnection.createDataChannel('oai-events', {
         ordered: true
       });
@@ -315,7 +449,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
 
       dataChannel.onopen = () => {
         console.log('[WEBRTC] 📡 Data channel opened');
-        // Configurar tools cuando el data channel esté realmente listo
+        // Configure tools when the data channel is ready
         console.log('[WEBRTC] 🔧 Data channel ready, configuring tools...');
         configureTools(agentType);
       };
@@ -325,13 +459,13 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
           const message = JSON.parse(event.data);
           console.log('[WEBRTC] 📨 Message received:', message.type);
           
-          // Log específico para session.updated (confirmación de tools)
+          // Log for session.updated (tools confirmation)
           if (message.type === 'session.updated') {
             console.log('[WEBRTC] ✅ Session updated successfully:', message);
             console.log('[WEBRTC] 🔧 Tools in session:', message.session?.tools);
           }
           
-          // Log específico para errores
+          // Log for errors
           if (message.type === 'error') {
             console.error('[WEBRTC] 💥 ERROR from OpenAI:', message);
             console.error('[WEBRTC] 💥 Error code:', message.error?.code);
@@ -339,20 +473,20 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
             console.error('[WEBRTC] 💥 Error details:', JSON.stringify(message.error, null, 2));
           }
           
-          // Log específico para function calls
+          // Log for function calls
           if (message.type === 'response.function_call_delta' || 
               message.type === 'response.output_item.done' ||
               message.item?.type === 'function_call') {
             console.log('[WEBRTC] 🔧 FUNCTION CALL detected:', message);
           }
           
-          // Log para respuestas de texto (para debug)
+          // Log for text responses (for debugging)
           if (message.type === 'response.output_item.done' && message.item?.type === 'message') {
             console.log('[WEBRTC] 💬 Text response detected:', message.item.content);
             console.log('[WEBRTC] ⚠️ AI responded with text instead of using tools!');
           }
           
-          // Procesar function calls automáticamente
+          // Automatically process function calls
           const toolResult = await processFunctionCall(message);
           if (toolResult) {
             console.log('[WEBRTC] ✅ Tool call processed successfully:', toolResult);
@@ -369,7 +503,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
         updateStatus('error');
       };
 
-      // 6. SDP negotiation directo con OpenAI (como proyecto exitoso)
+      // 6. SDP negotiation with OpenAI
       const offer = await peerConnection.createOffer();
       await peerConnection.setLocalDescription(offer);
 
@@ -395,14 +529,14 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
         sdp: answerSdp
       });
 
-      // 7. Configurar event listeners de conexión
+      // 7. Set up ICE connection state listeners
       peerConnection.oniceconnectionstatechange = () => {
         const state = peerConnection.iceConnectionState;
         console.log(`[WEBRTC] ICE connection state: ${state}`);
         
         if (state === 'connected') {
           updateStatus('connected');
-          // Tools se configuran en dataChannel.onopen cuando está realmente listo
+          // Tools are configured in dataChannel.onopen when ready
         } else if (['disconnected', 'failed', 'closed'].includes(state)) {
           updateStatus('disconnected');
           if (state === 'failed') {
@@ -423,7 +557,12 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     }
   }, [updateStatus, options, configureTools, disconnect, processFunctionCall]);
 
-  // 🔄 Actualizar sesión sin desconectar
+  /**
+   * Updates the session instructions and tools for a new agent without disconnecting,
+   * if the data channel is open and the agent uses the same voice.
+   * @param newAgent The new agent type to update to.
+   * @returns True if the update was sent, false otherwise.
+   */
   const updateSession = useCallback(async (newAgent: AgentType) => {
     console.log(`[WEBRTC] 🔄 Updating session to agent: ${newAgent}`);
     
@@ -433,20 +572,18 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     }
     
     try {
-      // Obtener herramientas filtradas para el nuevo agente
+      // Filter tools for the new agent
       const allTools = getRealtimeToolDefinitions();
       const agentTools = AGENT_CONFIGS[newAgent].tools;
       const filteredTools = allTools.filter(tool => 
         agentTools.includes(tool.name)
       );
       
-      // Crear mensaje de actualización de sesión
-      // NOTA: No podemos actualizar la voz una vez que hay audio del asistente en la conversación
-      // Error: "Cannot update a conversation's voice if assistant audio is present."
+      // Note: Cannot update the voice if assistant audio is present in the conversation.
       const sessionUpdateMessage = {
         type: 'session.update',
         session: {
-          // Eliminamos voice para evitar el error "cannot_update_voice"
+          // Do not include voice to avoid "cannot_update_voice" error
           instructions: AGENT_CONFIGS[newAgent].instructions,
           tools: filteredTools,
           tool_choice: 'auto'
@@ -455,7 +592,7 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
       
       console.log(`[WEBRTC] 📋 Session update message:`, JSON.stringify(sessionUpdateMessage, null, 2));
       
-      // Enviar mensaje de actualización
+      // Send session update message
       dataChannelRef.current.send(JSON.stringify(sessionUpdateMessage));
       console.log(`[WEBRTC] ✅ Session update sent successfully`);
       
@@ -466,17 +603,21 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     }
   }, [getRealtimeToolDefinitions]);
 
-  // 🔄 Cambio de agente (sin reconexión cuando es posible)
+  /**
+   * Switches to a different agent, updating the session if possible, or reconnecting if required.
+   * If the agent uses a different voice, a full reconnection is performed.
+   * @param newAgent The new agent type to switch to.
+   */
   const switchAgent = useCallback(async (newAgent: AgentType) => {
     console.log(`[WEBRTC] 🔄 Switching to agent: ${newAgent}`);
     
-    // Prevenir múltiples conexiones simultáneas
+    // Prevent multiple simultaneous connections
     if (isConnecting) {
       console.log(`[WEBRTC] ⚠️ Already connecting, ignoring switch to: ${newAgent}`);
       return;
     }
     
-    // Prevenir cambio al mismo agente
+    // Prevent switching to the same agent if already connected
     if (currentAgent === newAgent && status === 'connected') {
       console.log(`[WEBRTC] ⚠️ Already connected to: ${newAgent}`);
       return;
@@ -486,12 +627,10 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     
     try {
       if (status === 'connected' && dataChannelRef.current?.readyState === 'open') {
-        // Intentar actualizar la sesión sin desconectar
+        // Attempt to update the session without disconnecting
         console.log(`[WEBRTC] 🔄 Attempting to update session without disconnecting...`);
         
-        // NOTA: La actualización de sesión funciona para cambiar instrucciones y herramientas,
-        // pero no puede cambiar la voz una vez que hay audio del asistente en la conversación.
-        // Si los agentes usan voces diferentes, debemos recurrir a la reconexión completa.
+        // Session update works for instructions and tools, but not for voice if audio is present.
         const voicesAreDifferent = AGENT_CONFIGS[currentAgent].voice !== AGENT_CONFIGS[newAgent].voice;
         
         if (voicesAreDifferent) {
@@ -511,10 +650,10 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
         }
       }
       
-      // Si no hay conexión activa o falló la actualización, conectar normalmente
+      // If not connected or update failed, perform a full reconnection
       if (status === 'connected') {
         disconnect();
-        // Pequeña pausa para limpiar conexión anterior
+        // Small delay to ensure previous connection is cleaned up
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
       
@@ -525,7 +664,10 @@ export function useWebRTC(options: UseWebRTCOptions = {}): UseWebRTCReturn {
     }
   }, [status, currentAgent, isConnecting, disconnect, connect, updateSession, options]);
 
-  // 📨 Enviar mensaje via data channel
+  /**
+   * Sends a message over the data channel to the assistant.
+   * @param message The message to send (object or string).
+   */
   const sendMessage = useCallback((message: unknown) => {
     if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
       const messageStr = typeof message === 'string' ? message : JSON.stringify(message);

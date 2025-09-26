@@ -1,9 +1,21 @@
 /**
- * 🏗️ PATRÓN: Main Application Pattern + State Management Pattern
- * 🎯 PRINCIPIO: Component Composition + Event-Driven Architecture
+ * VoiceOrderingPage - Main page for the voice ordering application.
+ *
+ * Architectural Patterns:
+ * - Main Application Pattern
+ * - State Management Pattern
  * 
- * Voice Ordering Page - Página principal de la aplicación de pedidos por voz
- * Integra todos los componentes UI con la arquitectura del dominio
+ * Principles:
+ * - Component Composition
+ * - Event-Driven Architecture
+ *
+ * This page integrates all UI components with the domain architecture for a voice-driven food ordering experience.
+ * 
+ * Features:
+ * - Displays menu items and allows users to add them to a cart.
+ * - Supports voice-driven interactions for ordering, navigation, and checkout.
+ * - Manages application state for cart, order, and view transitions.
+ * - Handles event-driven updates from voice interface and other UI components.
  */
 
 'use client';
@@ -25,7 +37,9 @@ import type {
   VoiceStatus 
 } from '@/components/types';
 
-// Datos del menú (simulados desde menu-data.json)
+/**
+ * Static menu data (simulated, would typically come from an API or data file).
+ */
 const MENU_ITEMS: MenuItemData[] = [
   {
     name: "Big Burger Combo",
@@ -89,8 +103,15 @@ const MENU_ITEMS: MenuItemData[] = [
   }
 ];
 
+/**
+ * VoiceOrderingPage component.
+ * 
+ * Manages the main state and event handlers for the voice ordering flow.
+ */
 export default function VoiceOrderingPage() {
-  // Estado principal de la aplicación
+  /**
+   * Application state hooks.
+   */
   const [currentView, setCurrentView] = useState<AppView>('menu');
   const [, setIsVoiceActive] = useState(false);
   const [, setVoiceStatus] = useState<VoiceStatus>('disconnected');
@@ -99,25 +120,27 @@ export default function VoiceOrderingPage() {
   const [orderData, setOrderData] = useState<CheckoutData | null>(null);
   const [orderNumber, setOrderNumber] = useState<string>('');
 
-  // Calcular total del carrito
+  /**
+   * Calculates the total price of items in the cart.
+   */
   const cartTotal = cartItems.reduce((sum, item) => sum + item.subtotal, 0);
 
-  // Generar número de orden
+  /**
+   * Generates a unique order number.
+   * @returns {string} The generated order number.
+   */
   const generateOrderNumber = (): string => {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 5).toUpperCase();
     return `ORD-${timestamp}-${random}`;
   };
 
-  // Handlers de Voice Interface
+  /**
+   * Voice session handlers.
+   */
   const handleVoiceSessionStart = useCallback(async () => {
     console.log('🎤 Starting voice session...');
-    
-    // Aquí se integraría con RealtimeApiAdapter
-    // const realtimeAdapter = new RealtimeApiAdapter(...);
-    // await realtimeAdapter.startSession();
-    
-    // Simulación por ahora
+    // Integrate with RealtimeApiAdapter here if needed.
     await new Promise(resolve => setTimeout(resolve, 1000));
     console.log('🎤 Voice session started');
   }, []);
@@ -128,28 +151,34 @@ export default function VoiceOrderingPage() {
     setVoiceStatus('disconnected');
   }, []);
 
+  /**
+   * Handles changes in the voice interface status.
+   * @param status - The new status string.
+   * @param isActive - Whether the voice interface is active.
+   */
   const handleVoiceStatusChange = useCallback((status: string, isActive: boolean) => {
     console.log('🎤 Voice status:', status, isActive);
     setIsVoiceActive(isActive);
     setVoiceStatus(isActive ? 'connected' : 'disconnected');
   }, []);
 
-  // 🎯 Function Calling Handler - Conectar con Use Cases reales
+  /**
+   * Handles function calls from the voice interface.
+   * Connects to real use cases as needed.
+   * @param functionName - The name of the function to call.
+   * @param args - Arguments for the function.
+   */
   const handleFunctionCall = useCallback(async (functionName: string, args: Record<string, unknown>) => {
     console.log(`[VOICE-ORDERING] Function called: ${functionName}`, args);
-    
     try {
       switch (functionName) {
         case 'focus_menu_item':
-          // Usar FocusMenuItemUseCase
           if (args.item_name) {
             setActiveMenuItem(args.item_name as string);
             console.log(`[VOICE-ORDERING] Focused menu item: ${args.item_name}`);
           }
           break;
-          
         case 'order':
-          // Usar UpdateCartUseCase
           if (args.item_name && args.quantity) {
             const menuItem = MENU_ITEMS.find(item => item.name === args.item_name);
             if (menuItem) {
@@ -161,23 +190,18 @@ export default function VoiceOrderingPage() {
                 subtotal: menuItem.price * quantity,
                 image: menuItem.image
               };
-              
               setCartItems(prev => [...prev, newItem]);
               console.log(`[VOICE-ORDERING] Added to cart:`, newItem);
             }
           }
           break;
-          
         case 'update_order_data':
-          // Actualizar datos del pedido
           if (args.customer_info || args.delivery_address) {
             console.log(`[VOICE-ORDERING] Updating order data:`, args);
-            // Aquí se conectaría con UpdateOrderCommand
+            // Integrate with UpdateOrderCommand here if needed.
           }
           break;
-          
         case 'transfer_to_menu_agent':
-          // Cambiar vista si es necesario
           if (currentView !== 'menu') {
             setCurrentView('menu');
           }
@@ -189,25 +213,26 @@ export default function VoiceOrderingPage() {
     }
   }, [currentView]);
 
-  // Handlers de MenuCarousel
+  /**
+   * Handles focusing a menu item in the carousel.
+   * @param itemName - The name of the menu item to focus.
+   */
   const handleMenuItemFocus = useCallback((itemName: string) => {
     console.log('🎯 Focusing on menu item:', itemName);
     setActiveMenuItem(itemName);
-    
-    // Aquí se integraría con FocusMenuItemUseCase
-    // const focusUseCase = new FocusMenuItemUseCase(...);
-    // await focusUseCase.execute(new FocusMenuItemCommand(...));
+    // Integrate with FocusMenuItemUseCase here if needed.
   }, []);
 
-  // Handlers de LiveCart
+  /**
+   * Handles updating the quantity of an item in the cart.
+   * @param itemName - The name of the item.
+   * @param newQuantity - The new quantity.
+   */
   const handleItemUpdate = useCallback((itemName: string, newQuantity: number) => {
     console.log('🛒 Updating item:', itemName, 'quantity:', newQuantity);
-    
     if (newQuantity === 0) {
-      // Remover item
       setCartItems(prev => prev.filter(item => item.menuItemName !== itemName));
     } else {
-      // Actualizar cantidad
       setCartItems(prev => {
         const existingItem = prev.find(item => item.menuItemName === itemName);
         if (existingItem) {
@@ -217,7 +242,6 @@ export default function VoiceOrderingPage() {
               : item
           );
         } else {
-          // Agregar nuevo item
           const menuItem = MENU_ITEMS.find(item => item.name === itemName);
           if (menuItem) {
             return [...prev, {
@@ -233,44 +257,56 @@ export default function VoiceOrderingPage() {
     }
   }, []);
 
+  /**
+   * Handles removing an item from the cart.
+   * @param itemName - The name of the item to remove.
+   */
   const handleItemRemove = useCallback((itemName: string) => {
     console.log('🗑️ Removing item:', itemName);
     setCartItems(prev => prev.filter(item => item.menuItemName !== itemName));
   }, []);
 
+  /**
+   * Handles clearing all items from the cart.
+   */
   const handleCartClear = useCallback(() => {
     console.log('🗑️ Clearing cart');
     setCartItems([]);
   }, []);
 
+  /**
+   * Handles proceeding to the checkout view.
+   */
   const handleCartCheckout = useCallback(() => {
     console.log('💳 Proceeding to checkout');
     setCurrentView('checkout');
   }, []);
 
-  // Handlers de CheckoutFlow
+  /**
+   * Handles completion of an order in the checkout flow.
+   * @param checkoutData - The completed checkout data.
+   */
   const handleOrderComplete = useCallback((checkoutData: CheckoutData) => {
     console.log('✅ Order completed:', checkoutData);
-    
     const newOrderNumber = generateOrderNumber();
     setOrderData(checkoutData);
     setOrderNumber(newOrderNumber);
     setCurrentView('complete');
-    
-    // Limpiar carrito
     setCartItems([]);
-    
-    // Aquí se integraría con ProcessPaymentUseCase
-    // const paymentUseCase = new ProcessPaymentUseCase(...);
-    // await paymentUseCase.execute(new ProcessPaymentCommand(...));
+    // Integrate with ProcessPaymentUseCase here if needed.
   }, []);
 
+  /**
+   * Handles returning to the menu view from checkout or order complete.
+   */
   const handleBackToMenu = useCallback(() => {
     console.log('🔙 Back to menu');
     setCurrentView('menu');
   }, []);
 
-  // Handler de OrderComplete
+  /**
+   * Handles starting a new order after order completion.
+   */
   const handleNewOrder = useCallback(() => {
     console.log('🆕 Starting new order');
     setCurrentView('menu');
@@ -279,15 +315,18 @@ export default function VoiceOrderingPage() {
     setActiveMenuItem('');
   }, []);
 
-  // 🎯 Efectos para manejar eventos de tool calling
+  /**
+   * Effect: Registers and cleans up event listeners for tool-calling and view changes.
+   * Handles events such as updating the order, proceeding to payment, and direct view changes.
+   */
   useEffect(() => {
-    // Handler para actualizar orden completa
+    /**
+     * Handles updating the cart from an external event.
+     */
     const handleUpdateOrder = (event: CustomEvent) => {
       const { cart, customerConfirm } = event.detail;
       console.log('[VOICE-ORDERING] 🛒 Update order event:', { cart, customerConfirm });
-      
       if (cart && Array.isArray(cart)) {
-        // Convertir formato de cart de tool calling a formato interno
         const newCartItems: CartItemData[] = cart.map(item => {
           const menuItem = MENU_ITEMS.find(m => m.name === item.menu_item);
           return {
@@ -298,90 +337,84 @@ export default function VoiceOrderingPage() {
             image: menuItem?.image || ''
           };
         });
-        
         setCartItems(newCartItems);
       }
     };
 
-    // Handler para proceder a pago
+    /**
+     * Handles proceeding to payment (switches to checkout view and notifies agent).
+     */
     const handleProceedToPayment = () => {
       console.log('[VOICE-ORDERING] 💳 Proceed to payment event');
-      
-      // Cambiar vista a checkout
       setCurrentView('checkout');
-      
-      // Disparar evento para cambiar agente a payment
       const transferEvent = new CustomEvent('transferAgent', {
         detail: { targetAgent: 'payment', context: 'payment_flow' }
       });
       window.dispatchEvent(transferEvent);
     };
 
-    // Handler para proceder a checkout
+    /**
+     * Handles proceeding to checkout (switches to checkout view and notifies agent).
+     */
     const handleProceedToCheckout = () => {
       console.log('[VOICE-ORDERING] 🛒 Proceed to checkout event');
-      
-      // Cambiar vista a checkout
       setCurrentView('checkout');
-      
-      // Disparar evento para cambiar agente a payment
       const transferEvent = new CustomEvent('transferAgent', {
         detail: { targetAgent: 'payment', context: 'checkout_flow' }
       });
       window.dispatchEvent(transferEvent);
     };
 
-    // Handler para volver al menú
+    /**
+     * Handles returning to the menu view and notifies agent.
+     */
     const handleBackToMenu = () => {
       console.log('[VOICE-ORDERING] 🔙 Back to menu event');
-      
-      // Cambiar vista a menu
       setCurrentView('menu');
-      
-      // Disparar evento para cambiar agente a sales
       const transferEvent = new CustomEvent('transferAgent', {
         detail: { targetAgent: 'sales', context: 'back_to_menu' }
       });
       window.dispatchEvent(transferEvent);
     };
 
-    // Handler para actualizar datos del pedido
+    /**
+     * Handles updating order data from an external event.
+     */
     const handleUpdateOrderData = (event: CustomEvent) => {
       const { updatedFields } = event.detail;
       console.log('[VOICE-ORDERING] 📝 Update order data event:', updatedFields);
-      
-      // Aquí se actualizarían los campos del formulario de checkout
-      // Por ahora solo logueamos para debug
+      // Update checkout form fields here if needed.
     };
     
-    // Handlers para cambio directo de vista (desde VoiceInterface)
+    /**
+     * Handles direct view change to checkout.
+     */
     const handleDirectViewCheckout = (event: CustomEvent) => {
       console.log('[VOICE-ORDERING] 🔄 Direct view change to checkout:', event.detail);
       setCurrentView('checkout');
     };
     
+    /**
+     * Handles direct view change to menu.
+     */
     const handleDirectViewMenu = (event: CustomEvent) => {
       console.log('[VOICE-ORDERING] 🔄 Direct view change to menu:', event.detail);
       setCurrentView('menu');
     };
 
-    // Handler para orden completa
+    /**
+     * Handles order completion from an external event.
+     */
     const handleOrderComplete = (event: CustomEvent) => {
       const { orderData } = event.detail;
       console.log('[VOICE-ORDERING] ✅ Order complete event:', orderData);
-      
       const newOrderNumber = generateOrderNumber();
       setOrderNumber(newOrderNumber);
       setCurrentView('complete');
-      setCartItems([]); // Limpiar carrito
+      setCartItems([]);
     };
 
-    // Handler para cambio de agente
-    // Handler para transferencia de agente - REMOVIDO
-    // El cambio de agente se maneja directamente en VoiceInterface
-    // para evitar event listeners duplicados
-
-    // Registrar event listeners
+    // Register event listeners
     window.addEventListener('updateOrder', handleUpdateOrder as EventListener);
     window.addEventListener('proceedToPayment', handleProceedToPayment as EventListener);
     window.addEventListener('proceedToCheckout', handleProceedToCheckout as EventListener);
@@ -390,8 +423,8 @@ export default function VoiceOrderingPage() {
     window.addEventListener('orderComplete', handleOrderComplete as EventListener);
     window.addEventListener('directViewCheckout', handleDirectViewCheckout as EventListener);
     window.addEventListener('directViewMenu', handleDirectViewMenu as EventListener);
-    // window.addEventListener('transferAgent', handleTransferAgent as EventListener); // REMOVIDO - evitar duplicados
 
+    // Cleanup event listeners on unmount
     return () => {
       window.removeEventListener('updateOrder', handleUpdateOrder as EventListener);
       window.removeEventListener('proceedToPayment', handleProceedToPayment as EventListener);
@@ -401,16 +434,15 @@ export default function VoiceOrderingPage() {
       window.removeEventListener('orderComplete', handleOrderComplete as EventListener);
       window.removeEventListener('directViewCheckout', handleDirectViewCheckout as EventListener);
       window.removeEventListener('directViewMenu', handleDirectViewMenu as EventListener);
-      // window.removeEventListener('transferAgent', handleTransferAgent as EventListener); // REMOVIDO - evitar duplicados
     };
   }, []);
 
   return (
     <MainLayout>
-      {/* Header */}
+      {/* Main header */}
       <h1>Choose Your Meal</h1>
 
-      {/* Vista Menu */}
+      {/* Menu View */}
       {currentView === 'menu' && (
         <>
           <MenuCarousel
@@ -418,7 +450,6 @@ export default function VoiceOrderingPage() {
             onItemFocus={handleMenuItemFocus}
             activeIndex={activeMenuItem ? MENU_ITEMS.findIndex(item => item.name === activeMenuItem) : 0}
           />
-          
           <LiveCart
             isVisible={cartItems.length > 0}
             items={cartItems}
@@ -431,7 +462,7 @@ export default function VoiceOrderingPage() {
         </>
       )}
 
-      {/* Vista Checkout */}
+      {/* Checkout View */}
       {currentView === 'checkout' && (
         <CheckoutFlow
           isVisible={true}
@@ -442,7 +473,7 @@ export default function VoiceOrderingPage() {
         />
       )}
 
-      {/* Vista Order Complete */}
+      {/* Order Complete View */}
       {currentView === 'complete' && (
         <OrderComplete
           isVisible={true}
@@ -453,7 +484,7 @@ export default function VoiceOrderingPage() {
         />
       )}
 
-      {/* Voice Interface (siempre visible) */}
+      {/* Voice Interface (always visible) */}
       <VoiceInterface
         onSessionStart={handleVoiceSessionStart}
         onSessionStop={handleVoiceSessionStop}

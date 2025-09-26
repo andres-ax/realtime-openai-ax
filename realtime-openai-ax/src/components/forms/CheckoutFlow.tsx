@@ -1,52 +1,85 @@
-/**
- * 🏗️ PATRÓN: Checkout Flow Pattern + Form Validation Pattern
- * 🎯 PRINCIPIO: Multi-step Process + Data Validation
- * 
- * CheckoutFlow - Flujo completo de checkout con pago y entrega
- * Integra con Google Maps y procesamiento de pagos
- */
-
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
-import styles from './CheckoutFlow.module.css';
+/**
+ * CheckoutFlow Component
+ * 
+ * Implements a complete checkout flow with payment and delivery details.
+ * Integrates Google Maps for delivery address visualization and simulates payment processing.
+ * 
+ * Patterns: Checkout Flow Pattern, Form Validation Pattern
+ * Principles: Multi-step Process, Data Validation
+ */
 
+/**
+ * Represents a single item in the shopping cart.
+ */
 interface CartItemData {
+  /** Name of the menu item */
   menuItemName: string;
+  /** Quantity of this item in the cart */
   quantity: number;
+  /** Price per unit of the item */
   unitPrice: number;
+  /** Subtotal for this item (unitPrice * quantity) */
   subtotal: number;
+  /** Optional image URL for the item */
   image?: string;
 }
 
+/**
+ * Represents the data collected during checkout.
+ */
 interface CheckoutData {
-  // Customer info
+  // Customer information
+  /** Full name of the customer */
   customerName?: string;
+  /** Email address of the customer */
   email?: string;
+  /** Phone number of the customer */
   phone?: string;
-  
-  // Delivery info
+
+  // Delivery information
+  /** Delivery address */
   deliveryAddress?: string;
-  
-  // Payment info
+
+  // Payment information
+  /** Credit card number */
   cardNumber?: string;
+  /** Card expiration date (MM/YY) */
   expirationDate?: string;
+  /** Card CVV code */
   cvv?: string;
-  
-  // Order info
+
+  // Order information
+  /** Delivery method description */
   deliveryMethod?: string;
 }
 
+/**
+ * Props for the CheckoutFlow component.
+ */
 interface CheckoutFlowProps {
+  /** Whether the checkout flow is visible */
   isVisible?: boolean;
+  /** Array of items in the cart */
   cartItems?: CartItemData[];
+  /** Total price of the cart */
   cartTotal?: number;
+  /** Callback when the order is completed */
   onOrderComplete?: (orderData: CheckoutData) => void;
+  /** Callback to return to the menu */
   onBackToMenu?: () => void;
+  /** Additional CSS class for the root element */
   className?: string;
 }
 
+import React, { useState, useEffect, JSX } from 'react';
+import Image from 'next/image';
+import styles from './CheckoutFlow.module.css';
+
+/**
+ * CheckoutFlow component renders the checkout form, cart summary, and handles form validation and submission.
+ */
 export default function CheckoutFlow({
   isVisible = false,
   cartItems = [],
@@ -55,6 +88,7 @@ export default function CheckoutFlow({
   onBackToMenu,
   className = ''
 }: CheckoutFlowProps) {
+  // State for form data
   const [checkoutData, setCheckoutData] = useState<CheckoutData>({
     customerName: 'Enoc Silva',
     deliveryAddress: 'Shared Locker@Commons, 15255 NE 40th St, Redmond, WA 98052',
@@ -64,19 +98,22 @@ export default function CheckoutFlow({
     deliveryMethod: 'Free Delivery – $0.00'
   });
 
+  // State for processing status and validation errors
   const [isProcessing, setIsProcessing] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // 🔄 Event listener para actualizaciones de Karol
+  /**
+   * Listen for external order data updates (e.g., from another component or integration).
+   * Updates checkoutData and clears errors for updated fields.
+   */
   useEffect(() => {
     const handleUpdateOrderData = (event: CustomEvent) => {
       const orderData = event.detail;
-      console.log('[CHECKOUT-FLOW] 📝 Received order data update:', orderData);
-      
-      // Actualizar checkoutData con los datos recibidos de Karol
+      console.log('[CHECKOUT-FLOW] Received order data update:', orderData);
+
+      // Map external field names to internal CheckoutData fields
       setCheckoutData(prev => ({
         ...prev,
-        // Mapear campos de Karol a campos del formulario
         ...(orderData.name && { customerName: orderData.name }),
         ...(orderData.address && { deliveryAddress: orderData.address }),
         ...(orderData.contact_phone && { phone: orderData.contact_phone }),
@@ -84,14 +121,13 @@ export default function CheckoutFlow({
         ...(orderData.expiration_date && { expirationDate: orderData.expiration_date }),
         ...(orderData.cvv && { cvv: orderData.cvv })
       }));
-      
-      // Limpiar errores de campos actualizados
+
+      // Clear errors for updated fields
       const updatedFields = Object.keys(orderData);
       if (updatedFields.length > 0) {
         setErrors(prev => {
           const newErrors = { ...prev };
           updatedFields.forEach(field => {
-            // Mapear nombres de campos
             const fieldMap: Record<string, string> = {
               name: 'customerName',
               address: 'deliveryAddress',
@@ -110,24 +146,32 @@ export default function CheckoutFlow({
       }
     };
 
-    // Registrar event listener
     window.addEventListener('updateOrderData', handleUpdateOrderData as EventListener);
-    
-    // Cleanup
+
     return () => {
       window.removeEventListener('updateOrderData', handleUpdateOrderData as EventListener);
     };
   }, []);
 
-  // Calcular total de items
+  /**
+   * Calculates the total number of items in the cart.
+   */
   const itemCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
 
-  // Formatear precio
+  /**
+   * Formats a price as a string in USD.
+   * @param price - The price to format
+   * @returns The formatted price string
+   */
   const formatPrice = (price: number): string => {
     return `$${price.toFixed(2)}`;
   };
 
-  // Obtener imagen del item
+  /**
+   * Returns the image URL for a given menu item name.
+   * @param itemName - The name of the menu item
+   * @returns The image URL
+   */
   const getItemImage = (itemName: string): string => {
     const imageMap: Record<string, string> = {
       "Big Burger Combo": "/images/menu/combo-postobon.png",
@@ -141,21 +185,29 @@ export default function CheckoutFlow({
       "Baked Apple Pie": "/images/menu/Apple_Pie.png",
       "Manzana Postobon® Drink": "/images/menu/manzana-postobon-350-RET-1.png"
     };
-    
+
     return imageMap[itemName] || '/images/menu/Hamburger.png';
   };
 
-  // Actualizar campo
+  /**
+   * Updates a field in the checkout form and clears its error if present.
+   * @param field - The field to update
+   * @param value - The new value
+   */
   const updateField = (field: keyof CheckoutData, value: string) => {
     setCheckoutData(prev => ({ ...prev, [field]: value }));
-    
-    // Limpiar error del campo
+
+    // Clear error for this field if present
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
 
-  // Validar formulario
+  /**
+   * Validates the checkout form fields.
+   * Sets error messages for invalid fields.
+   * @returns True if the form is valid, false otherwise.
+   */
   const validateForm = (): boolean => {
     const newErrors: Record<string, string> = {};
 
@@ -193,7 +245,10 @@ export default function CheckoutFlow({
     return Object.keys(newErrors).length === 0;
   };
 
-  // Procesar orden
+  /**
+   * Handles the order submission process.
+   * Validates the form, simulates processing, and calls the onOrderComplete callback.
+   */
   const handleOrderSubmit = async () => {
     if (!validateForm()) {
       return;
@@ -202,9 +257,9 @@ export default function CheckoutFlow({
     setIsProcessing(true);
 
     try {
-      // Simular procesamiento
+      // Simulate order processing delay
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
+
       onOrderComplete?.(checkoutData);
     } catch (error) {
       console.error('Error processing order:', error);
@@ -214,10 +269,12 @@ export default function CheckoutFlow({
     }
   };
 
-  // Actualizar mapa cuando cambie la dirección
+  /**
+   * Effect: Updates the map when the delivery address changes.
+   * In a real implementation, this would update the map view.
+   */
   useEffect(() => {
     if (checkoutData.deliveryAddress) {
-      // En una implementación real, aquí se actualizaría el mapa
       console.log('Updating map for address:', checkoutData.deliveryAddress);
     }
   }, [checkoutData.deliveryAddress]);
@@ -227,15 +284,15 @@ export default function CheckoutFlow({
   }
 
   return (
-    <section 
+    <section
       className={`${styles.checkoutSection} ${className}`}
       aria-labelledby="checkout-heading"
     >
       <div className={styles.checkoutContainer}>
-        {/* Panel izquierdo: Resumen del carrito */}
+        {/* Left panel: Cart summary */}
         <div className={styles.cartSummary}>
           <h2 id="checkout-heading">Checkout</h2>
-          
+
           <p className={styles.cartCount} aria-live="polite">
             {itemCount} item{itemCount !== 1 ? 's' : ''} in cart
           </p>
@@ -266,7 +323,7 @@ export default function CheckoutFlow({
             </span>
           </div>
 
-          <button 
+          <button
             onClick={handleOrderSubmit}
             disabled={isProcessing || cartItems.length === 0}
             className={styles.proceedButton}
@@ -279,12 +336,12 @@ export default function CheckoutFlow({
           )}
         </div>
 
-        {/* Panel derecho: Detalles de orden y entrega */}
+        {/* Right panel: Order and delivery details */}
         <div className={styles.orderDetails}>
           <h3>Order & Delivery Details</h3>
-          
+
           <div className={styles.detailsGrid}>
-            {/* Mapa */}
+            {/* Map */}
             <div className={styles.mapContainer} aria-label="Delivery map">
               <iframe
                 src={`https://www.google.com/maps/embed/v1/place?key=AIzaSyBLXq4XwucYgswkEICrCiSKqjshpjt2DZg&q=${encodeURIComponent(checkoutData.deliveryAddress || '')}`}
@@ -297,10 +354,10 @@ export default function CheckoutFlow({
               />
             </div>
 
-            {/* Información de entrega */}
+            {/* Delivery information */}
             <fieldset className={styles.fieldset}>
               <legend>Delivery Information</legend>
-              
+
               <div className={styles.formGroup}>
                 <label htmlFor="customer-name">Full Name</label>
                 <input
@@ -332,10 +389,10 @@ export default function CheckoutFlow({
               </div>
             </fieldset>
 
-            {/* Método de pago */}
+            {/* Payment method */}
             <fieldset className={styles.fieldset}>
               <legend>Payment Method</legend>
-              
+
               <div className={styles.formGroup}>
                 <label htmlFor="card-number">Card Number</label>
                 <input
@@ -385,10 +442,10 @@ export default function CheckoutFlow({
               </div>
             </fieldset>
 
-            {/* Información de contacto */}
+            {/* Contact information */}
             <fieldset className={styles.fieldset}>
               <legend>Contact Information</legend>
-              
+
               <div className={styles.formGroup}>
                 <label htmlFor="phone">Phone</label>
                 <input
@@ -420,7 +477,7 @@ export default function CheckoutFlow({
               </div>
             </fieldset>
 
-            {/* Método de entrega */}
+            {/* Delivery method */}
             <fieldset className={styles.fieldset}>
               <legend>Delivery Method</legend>
               <p className={styles.deliveryMethod}>
@@ -431,9 +488,9 @@ export default function CheckoutFlow({
         </div>
       </div>
 
-      {/* Botón volver al menú */}
+      {/* Back to menu button */}
       {onBackToMenu && (
-        <button 
+        <button
           onClick={onBackToMenu}
           className={styles.backButton}
         >

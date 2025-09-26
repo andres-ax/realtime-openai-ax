@@ -289,24 +289,6 @@ export default function MenuCarousel({
           );
         })}
       </div>
-
-      {/* Navigation controls (opcional) */}
-      <div className={styles.controls}>
-        <button 
-          onClick={() => rotate(-1)}
-          className={styles.navButton}
-          aria-label="Previous item"
-        >
-          ←
-        </button>
-        <button 
-          onClick={() => rotate(1)}
-          className={styles.navButton}
-          aria-label="Next item"
-        >
-          →
-        </button>
-      </div>
     </section>
   );
 }

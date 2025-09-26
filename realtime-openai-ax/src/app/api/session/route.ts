@@ -1,32 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 /**
- * 🔑 SESSION API ENDPOINT
+ * SESSION API ENDPOINT
  * 
- * Crea ephemeral keys para OpenAI Realtime API
- * Implementa Security Pattern + Token Management Pattern
+ * This endpoint provides ephemeral session keys for the OpenAI Realtime API.
+ * Implements security best practices and token management patterns.
+ * 
+ * - GET: Returns the configured OpenAI API key (for internal use/testing only).
+ * - POST: Creates a new ephemeral session with OpenAI Realtime API and returns a client secret.
  */
 
+/**
+ * Represents the response structure from the OpenAI Realtime API when creating a session.
+ */
 interface OpenAIEphemeralKeyResponse {
+  /** Unique identifier for the session */
   id: string;
+  /** Object type (e.g., "realtime.session") */
   object: string;
+  /** Expiration time (Unix timestamp in seconds) */
   expires_at: number;
+  /** Client secret object containing the secret value and its expiration */
   client_secret: {
     value: string;
     expires_at: number;
   };
+  /** Optional session name */
   name?: string;
 }
 
+/**
+ * Represents the response structure returned to the client after creating a session.
+ */
 interface SessionResponse {
+  /** Client secret object for authenticating with the session */
   client_secret: {
     value: string;
     expires_at: number;
   };
+  /** Unique session identifier */
   session_id: string;
+  /** Expiration time (Unix timestamp in seconds) */
   expires_at: number;
 }
 
+/**
+ * GET /api/session
+ * 
+ * Returns the OpenAI API key if configured.
+ * 
+ * @returns {NextResponse} JSON response containing the API key or an error message.
+ */
 export async function GET() {
   try {
     console.log('[SESSION] 🔑 API key request received');
@@ -57,11 +81,25 @@ export async function GET() {
   }
 }
 
+/**
+ * POST /api/session
+ * 
+ * Creates a new ephemeral session with the OpenAI Realtime API and returns a client secret.
+ * 
+ * Request body should include:
+ * - model: (optional) Model name to use (default: 'gpt-4o-realtime-preview-2024-10-01')
+ * - voice: (optional) Voice name to use (default: 'alloy')
+ * - instructions: (optional) System instructions for the session
+ * - sessionConfig: (optional) Additional session configuration
+ * 
+ * @param {NextRequest} request - The incoming HTTP request
+ * @returns {NextResponse} JSON response containing the session client secret and metadata, or an error message.
+ */
 export async function POST(request: NextRequest) {
   try {
     console.log('[SESSION] 🚀 Creating new OpenAI session...');
     
-    // 🛡️ Security Pattern: Validar API key
+    // Security: Validate that the API key is present in the environment
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       console.error('[SESSION] ❌ OpenAI API key not found in environment');
@@ -74,7 +112,7 @@ export async function POST(request: NextRequest) {
     console.log('[SESSION] ✅ API key found, length:', apiKey.length);
     console.log('[SESSION] 🔑 API key prefix:', apiKey.substring(0, 10) + '...');
 
-    // 📊 Extraer configuración del request
+    // Parse request body for session configuration
     const body = await request.json();
     const { 
       model = 'gpt-4o-realtime-preview-2024-10-01',
@@ -85,7 +123,7 @@ export async function POST(request: NextRequest) {
     
     console.log('[SESSION] 📋 Request config:', { model, voice, instructions: instructions.length + ' chars' });
 
-    // 🔄 Retry Pattern: Crear ephemeral key con reintentos
+    // Retry logic: Attempt to create a session up to maxAttempts times
     let attempts = 0;
     const maxAttempts = 3;
     
@@ -94,7 +132,7 @@ export async function POST(request: NextRequest) {
         attempts++;
         console.log(`[SESSION] 🔄 Attempt ${attempts}/${maxAttempts} - Calling OpenAI API...`);
         
-        // 🌐 Llamada a OpenAI API
+        // Construct the request body for OpenAI API
         const requestBody = {
           model,
           voice,
@@ -125,7 +163,7 @@ export async function POST(request: NextRequest) {
         const sessionData: OpenAIEphemeralKeyResponse = await response.json();
         console.log('[SESSION] 📋 OpenAI session data:', sessionData);
 
-        // 🎯 Result Pattern: Respuesta exitosa
+        // Build the response to return to the client
         const sessionResponse: SessionResponse = {
           client_secret: {
             value: sessionData.client_secret.value,
@@ -135,7 +173,7 @@ export async function POST(request: NextRequest) {
           expires_at: sessionData.expires_at
         };
 
-        // 📊 Audit Trail Pattern: Log de sesión creada
+        // Log session creation details for auditing
         console.log(`[SESSION] ✅ Created session: ${sessionData.id}`);
         console.log(`[SESSION] 🔑 Client secret: ${sessionData.client_secret.value.substring(0, 20)}...`);
         console.log(`[SESSION] ⏰ Expires: ${new Date(sessionData.expires_at * 1000).toISOString()}`);
@@ -150,7 +188,7 @@ export async function POST(request: NextRequest) {
           throw error;
         }
         
-        // 🔄 Retry Pattern: Esperar antes del siguiente intento
+        // Wait before retrying (exponential backoff)
         await new Promise(resolve => setTimeout(resolve, 1000 * attempts));
       }
     }
@@ -158,7 +196,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('[SESSION] Error creating session:', error);
     
-    // 🛡️ Security Pattern: No exponer detalles internos
+    // Security: Do not expose internal error details to the client
     return NextResponse.json(
       { 
         error: 'Failed to create session',
@@ -168,4 +206,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
