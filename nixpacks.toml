@@ -1,14 +1,15 @@
 [phases.setup]
 nixPkgs = ['nodejs_20']
+workDir = 'realtime-openai-ax'
 
 [phases.install]
-cmds = ['cd realtime-openai-ax && npm ci']
+cmds = ['npm ci']
 
 [phases.build]
-cmds = ['cd realtime-openai-ax && npm run build']
+cmds = ['npm run build']
 
 [start]
-cmd = 'cd realtime-openai-ax && npm start'
+cmd = 'npm start'
 
 [variables]
 NODE_ENV = 'production'

@@ -8,12 +8,10 @@
 ```json
 {
   "build": {
-    "builder": "NIXPACKS",
-    "buildCommand": "cd realtime-openai-ax && npm ci && npm run build",
-    "watchPatterns": ["realtime-openai-ax/**"]
+    "builder": "DOCKERFILE",
+    "dockerfilePath": "Dockerfile"
   },
   "deploy": {
-    "startCommand": "cd realtime-openai-ax && npm start",
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE"
   }
@@ -79,15 +77,22 @@ PORT=3000
 ## 🔧 COMANDOS UTILIZADOS POR RAILWAY
 
 ```bash
-# Build
-cd realtime-openai-ax && npm ci && npm run build
+# Build (dentro del contenedor Docker)
+WORKDIR /app
+COPY realtime-openai-ax/ .
+RUN npm ci && npm run build
 
-# Start
-cd realtime-openai-ax && npm start
+# Start (dentro del contenedor)
+CMD ["node", "server.js"]
 
 # Health Check
 GET / (respuesta 200 OK)
 ```
+
+## 🚨 CORRECCIÓN APLICADA
+
+**Problema original:** `The executable 'cd' could not be found`
+**Solución:** Cambio de NIXPACKS a DOCKERFILE para mejor control del build process
 
 ## 🎯 VENTAJAS DE ESTA CONFIGURACIÓN
 

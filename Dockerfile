@@ -1,47 +1,43 @@
-# Dockerfile para Railway con directorio específico
+# Dockerfile optimizado para Railway
 FROM node:20-alpine AS base
 
-# Instalar dependencias solo cuando sea necesario
-FROM base AS deps
+# Instalar dependencias del sistema
 RUN apk add --no-cache libc6-compat
+
+# Etapa de dependencias
+FROM base AS deps
 WORKDIR /app
-
-# Copiar archivos de configuración desde el subdirectorio
 COPY realtime-openai-ax/package.json realtime-openai-ax/package-lock.json* ./
-RUN npm ci
+RUN npm ci --only=production
 
-# Reconstruir el código fuente solo cuando sea necesario
+# Etapa de build
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY realtime-openai-ax/package.json realtime-openai-ax/package-lock.json* ./
+RUN npm ci
 COPY realtime-openai-ax/ .
-
 RUN npm run build
 
-# Imagen de producción, copiar todos los archivos y ejecutar next
+# Etapa de producción
 FROM base AS runner
 WORKDIR /app
 
-ENV NODE_ENV production
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOSTNAME="0.0.0.0"
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copiar archivos públicos
 COPY --from=builder /app/public ./public
 
-# Establecer los permisos correctos para prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
-
-# Copiar automáticamente archivos de salida aprovechando las capas de Docker
+# Copiar archivos de build
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 USER nextjs
 
 EXPOSE 3000
-
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
 
 CMD ["node", "server.js"]
