@@ -45,6 +45,14 @@ export abstract class BaseEntity<T> {
     this._updatedAt = new Date();
   }
 
+  /**
+   * 🕒 PATRÓN: Timestamp Management Pattern
+   * Actualizar timestamp de modificación
+   */
+  protected updateTimestamp(): void {
+    this._updatedAt = new Date();
+  }
+
   public getDomainEvents(): DomainEvent[] {
     return [...this._domainEvents];
   }
